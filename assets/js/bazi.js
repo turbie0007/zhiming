@@ -2,13 +2,13 @@ import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
   JIE_MAP, CITIES,
-} from './data.js?v=20261137';
+} from './data.js?v=20261141';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261137';
+} from './astro.js?v=20261141';
 
 const DAY_MS = 86400000;
 
@@ -160,10 +160,24 @@ function shenshaFor(pillar, ctx) {
   return labels;
 }
 
+const hourCache = new WeakMap();
+
 export function hourPeriod(chart, dayStem, hourBranch) {
+  let byDay = hourCache.get(chart);
+  if (!byDay) {
+    byDay = new Map();
+    hourCache.set(chart, byDay);
+  }
+  let byBranch = byDay.get(dayStem);
+  if (!byBranch) {
+    byBranch = new Map();
+    byDay.set(dayStem, byBranch);
+  }
+  const cached = byBranch.get(hourBranch);
+  if (cached) return cached;
   const ctx = natalCtx(chart);
   const stem = mod((dayStem % 5) * 2 + hourBranch, 10);
-  return {
+  const result = {
     branch: hourBranch,
     stem,
     stemChar: STEMS[stem],
@@ -171,6 +185,8 @@ export function hourPeriod(chart, dayStem, hourBranch) {
     tenGod: getTenGod(ctx.dayStem, stem),
     shensha: shenshaFor({ stem, branch: hourBranch }, ctx),
   };
+  byBranch.set(hourBranch, result);
+  return result;
 }
 
 function natalCtx(chart) {
@@ -188,7 +204,16 @@ function natalCtx(chart) {
   };
 }
 
+const periodCache = new WeakMap();
+
 export function periodTable(chart, year) {
+  let byYear = periodCache.get(chart);
+  if (!byYear) {
+    byYear = new Map();
+    periodCache.set(chart, byYear);
+  }
+  if (byYear.has(year)) return byYear.get(year);
+
   const ctx = natalCtx(chart);
   const dayStem = ctx.dayStem;
   const yearIdx = mod(year - 4, 60);
@@ -247,7 +272,9 @@ export function periodTable(chart, year) {
     };
   });
 
-  return { year: yearInfo, months };
+  const table = { year: yearInfo, months };
+  byYear.set(year, table);
+  return table;
 }
 
 function makePillar(idx, dayStem, ctx, isDay = false) {
@@ -593,6 +620,11 @@ export function computeChart(input) {
       years,
     });
   }
+  steps.forEach((step, i) => {
+    const endTs = (i + 1 < steps.length ? steps[i + 1].startTs : addMonths(step.startTs, 120)) - DAY_MS;
+    step.startText = formatDate(step.startTs, false);
+    step.endText = formatDate(endTs, false);
+  });
 
   // Palaces
   const monthOrdinal = mod(monthBranch - 2, 12) + 1;
@@ -742,8 +774,8 @@ export function computeChart(input) {
       branch: monthBranch,
       branchChar: BRANCHES[monthBranch],
       element: monthElement,
-      prevJie: { name: prevJie.name, days: prevJieDays },
-      nextJie: { name: nextJie.name, days: nextJieDays },
+      prevJie: { name: prevJie.name, days: prevJieDays, text: formatDate(prevJie.ts) },
+      nextJie: { name: nextJie.name, days: nextJieDays, text: formatDate(nextJie.ts) },
       ordinal: monthOrdinal,
     },
     luck: {

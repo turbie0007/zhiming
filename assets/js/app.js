@@ -1,22 +1,26 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261137';
+} from './data.js?v=20261141';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261137';
+} from './bazi.js?v=20261141';
 import {
-  lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261137';
-import { ARTICLES } from './learn.js?v=20261137';
-import { GLOSSARY } from './glossary.js?v=20261137';
+  lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
+} from './astro.js?v=20261141';
+import { ARTICLES } from './learn.js?v=20261141';
+import { GLOSSARY } from './glossary.js?v=20261141';
 
 const STORAGE = {
-  records: 'zhiming.records.v2',
+  records: 'zhiming.records.v3',
+  legacyRecords: 'zhiming.records.v2',
+  backup: 'zhiming.backup.v1',
   lastInput: 'zhiming.lastInput.v2',
   theme: 'zhiming.theme.v1',
 };
+
+const MAX_RECORDS = 500;
 
 const DEFAULT_INPUT = {
   name: '',
@@ -28,6 +32,7 @@ const DEFAULT_INPUT = {
   trueSolar: false,
   city: '北京',
   lateZi: true,
+  shareHideName: false,
 };
 
 const SAMPLE_INPUT = {
@@ -50,6 +55,8 @@ const state = {
   compact: false,
   records: [],
   recordQuery: '',
+  recordTag: '',
+  compare: { a: null, b: null },
 };
 
 const app = document.getElementById('app');
@@ -76,6 +83,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   chevron: '<path d="m6 9 6 6 6-6"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
 };
 
 function icon(name, size = 18) {
@@ -116,6 +124,10 @@ function dateInputValue(solar) {
 
 function timeInputValue(time) {
   return time ? `${two(time.h)}:${two(time.min)}` : '';
+}
+
+function shortDate(text) {
+  return String(text || '').replace(/年|月/g, '.').replace(/日/g, '');
 }
 
 function ageText(decYears) {
@@ -178,10 +190,10 @@ function closeTerm(restoreFocus = false) {
   termAnchor = null;
 }
 
-async function copyText(text) {
+async function copyText(text, message = '已複製到剪貼板') {
   try {
     await navigator.clipboard.writeText(text);
-    toast('已複製到剪貼板');
+    toast(message);
   } catch {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -191,7 +203,7 @@ async function copyText(text) {
     ta.select();
     try {
       document.execCommand('copy');
-      toast('已複製到剪貼板');
+      toast(message);
     } catch {
       toast('複製失敗，請手動選擇文本');
     }
@@ -253,10 +265,32 @@ function toggleTheme() {
 
 // ---- Storage ----
 
+function upgradeRecord(record) {
+  if (!record || typeof record !== 'object' || !record.input) return null;
+  const rawTags = Array.isArray(record.tags) ? record.tags : [];
+  const tags = [...new Set(rawTags.map((t) => String(t).trim()).filter(Boolean))].slice(0, 6);
+  return {
+    ...record,
+    tags,
+    note: typeof record.note === 'string' ? record.note : '',
+  };
+}
+
 function loadRecords() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE.records) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    const stored = JSON.parse(localStorage.getItem(STORAGE.records) || 'null');
+    if (Array.isArray(stored)) return stored.map(upgradeRecord).filter(Boolean);
+    const legacy = JSON.parse(localStorage.getItem(STORAGE.legacyRecords) || 'null');
+    if (Array.isArray(legacy)) {
+      const migrated = legacy.map(upgradeRecord).filter(Boolean);
+      try {
+        localStorage.setItem(STORAGE.records, JSON.stringify(migrated));
+      } catch {
+        // storage may be unavailable
+      }
+      return migrated;
+    }
+    return [];
   } catch {
     return [];
   }
@@ -269,6 +303,34 @@ function persistRecords() {
   } catch {
     return false;
   }
+}
+
+function loadBackupMeta() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE.backup) || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveBackupMeta(meta) {
+  try {
+    localStorage.setItem(STORAGE.backup, JSON.stringify(meta));
+  } catch {
+    // storage may be unavailable
+  }
+}
+
+function backupNoticeDue(records) {
+  if (!records.length) return false;
+  const meta = loadBackupMeta();
+  const now = Date.now();
+  const day = 86400000;
+  const lastExport = Date.parse(meta.lastExport || '');
+  if (!Number.isNaN(lastExport) && now - lastExport < 30 * day) return false;
+  const dismissed = Date.parse(meta.dismissedAt || '');
+  if (!Number.isNaN(dismissed) && now - dismissed < 7 * day) return false;
+  return true;
 }
 
 function loadLastInput() {
@@ -330,6 +392,8 @@ function route(options = {}) {
     renderShared(path.slice('/view/'.length));
   } else if (path === '/records') {
     renderRecords();
+  } else if (path === '/compare') {
+    renderCompare();
   } else if (path === '/learn') {
     renderLearn();
   } else if (path.startsWith('article-')) {
@@ -345,7 +409,7 @@ function route(options = {}) {
 }
 
 function updateNav(path) {
-  const key = path.startsWith('/records') ? 'records'
+  const key = path.startsWith('/records') || path.startsWith('/compare') ? 'records'
     : path.startsWith('/learn') || path.startsWith('article-') ? 'learn'
       : path.startsWith('/about') ? 'about'
         : 'home';
@@ -499,6 +563,7 @@ function renderForm() {
             <p class="hint">按城市經度與出生日均時差校正鐘錶時間，結果會標註在命盤頂部。</p>
           </div>
           <label class="check"><input type="checkbox" id="f-late-zi" checked> 晚子時（23:00 後）按次日日柱</label>
+          <label class="check"><input type="checkbox" id="f-share-private"> 分享與複製時隱藏姓名</label>
         </div>
       </details>
 
@@ -548,6 +613,7 @@ function initHomeForm() {
   trueSolar.checked = !!input.trueSolar;
   citySelect.value = input.city || '北京';
   lateZi.checked = input.lateZi !== false;
+  document.getElementById('f-share-private').checked = !!input.shareHideName;
 
   lunarYear.value = String(solarForForm.y);
   syncLunarFromSolar(solarForForm, null, false);
@@ -769,6 +835,7 @@ function readFormInput(form) {
     trueSolar: document.getElementById('f-true-solar').checked,
     city: document.getElementById('f-city').value,
     lateZi: document.getElementById('f-late-zi').checked,
+    shareHideName: document.getElementById('f-share-private').checked,
   };
 }
 
@@ -888,6 +955,31 @@ function renderError(message, heading = '鏈接未能起盤', pageTitle = '鏈�
   `;
 }
 
+const CLIMATE = {
+  0: { label: '仲冬', text: '水冷木寒，調候重在暖局；全局過寒時，火氣最能提神。', keys: ['fire'] },
+  1: { label: '季冬', text: '濕寒未退，土凍水冷，調候同樣以火暖局為先。', keys: ['fire'] },
+  2: { label: '初春', text: '餘寒未盡，木氣初生，宜火暖木、金修剪。', keys: ['fire', 'metal'] },
+  3: { label: '仲春', text: '木旺而濕，調候取火泄秀、金修剪，使木不偏枯。', keys: ['fire', 'metal'] },
+  4: { label: '季春', text: '土濕木盛，宜火暖土、木疏土，令氣機流通。', keys: ['fire', 'wood'] },
+  5: { label: '初夏', text: '火氣漸旺，燥熱將起，以水潤局為調候主軸。', keys: ['water'] },
+  6: { label: '仲夏', text: '炎熱當令，最忌燥烈，調候重在水潤。', keys: ['water'] },
+  7: { label: '季夏', text: '燥土當權，水氣不足，仍以水潤土為先。', keys: ['water'] },
+  8: { label: '初秋', text: '金旺氣肅，宜火煉金、水潤燥，使剛而不脆。', keys: ['fire', 'water'] },
+  9: { label: '仲秋', text: '金旺而燥，調候取火煉金、水洗金，剛柔相濟。', keys: ['fire', 'water'] },
+  10: { label: '季秋', text: '燥土傷金，宜水潤燥、木疏土，避免過乾。', keys: ['water', 'wood'] },
+  11: { label: '初冬', text: '水寒金冷，調候以火暖局，使生機不絕。', keys: ['fire'] },
+};
+
+function climateAdvice(chart) {
+  const info = CLIMATE[chart.monthInfo.branch] || CLIMATE[0];
+  const favorable = chart.dayMaster.favorable.map((f) => f.key);
+  const overlap = info.keys.filter((key) => favorable.includes(key));
+  const compare = overlap.length
+    ? `與上方五行喜用同向（${overlap.map((key) => ELEMENT_LABEL[key]).join('、')}），可作加強印證。`
+    : '與上方五行喜用方向不同，屬另一層參考；先看全局平衡，再看寒暖。';
+  return { ...info, compare };
+}
+
 function renderChart(chart) {
   const name = chart.input.name || '未具名';
   document.title = `知命 · ${name}的命盤`;
@@ -895,6 +987,12 @@ function renderChart(chart) {
   const gender = GENDER_LABEL[chart.input.gender];
   const dm = chart.dayMaster;
   const selected = chart.luck.steps[state.selectedLuck] || chart.luck.steps[0];
+  const climate = climateAdvice(chart);
+  const printWatch = watchData(chart, selected);
+  const printPeriodText = printWatch.day && printWatch.hour
+    ? `${printWatch.day.y}年${printWatch.day.m}月${printWatch.day.d}日 ${BRANCHES[printWatch.hour.branch]}時`
+    : '未選擇';
+  const printJoin = (list, empty) => (list.length ? list.map((item) => item.text).join('；') : empty);
 
   app.innerHTML = `
     <div class="wrap result-page">
@@ -905,7 +1003,9 @@ function renderChart(chart) {
           <button class="chip-btn" type="button" data-action="save">${icon('save', 15)} 保存</button>
           <button class="chip-btn" type="button" data-action="share">${icon('link', 15)} 分享</button>
           <button class="chip-btn" type="button" data-action="copy" aria-label="複製命盤文字">${icon('copy', 15)} 複製</button>
+          <button class="chip-btn" type="button" data-action="png">${icon('image', 15)} 存圖</button>
           <button class="chip-btn" type="button" data-action="print">${icon('print', 15)} 打印</button>
+          <button class="chip-btn" type="button" data-action="print-compact">${icon('print', 15)} 精簡列印</button>
         </div>
       </div>
 
@@ -992,7 +1092,7 @@ function renderChart(chart) {
               ${renderPalace('身宮', chart.palaces.shen, '身之所寄')}
             </div>
             <div class="jie-info">
-              <div><span>節氣</span>生於 <b>${chart.monthInfo.prevJie.name}</b> 後 ${chart.monthInfo.prevJie.days.toFixed(1)} 天，距 <b>${chart.monthInfo.nextJie.name}</b> ${chart.monthInfo.nextJie.days.toFixed(1)} 天</div>
+              <div><span>節氣</span>生於 <b>${chart.monthInfo.prevJie.name}</b>（${chart.monthInfo.prevJie.text}）後 ${chart.monthInfo.prevJie.days.toFixed(1)} 天，距 <b>${chart.monthInfo.nextJie.name}</b>（${chart.monthInfo.nextJie.text}）${chart.monthInfo.nextJie.days.toFixed(1)} 天</div>
               <div><span>月令</span>${chart.monthInfo.branchChar}月 · ${ELEMENT_LABEL[chart.monthInfo.element]}當令</div>
               <div><span>校正</span>${chart.solarCorrection ? `真太陽時 ${chart.solarCorrection.rounded > 0 ? '+' : ''}${chart.solarCorrection.rounded} 分鐘` : '按北京時間'} · ${chart.input.lateZi !== false ? '晚子時換日' : '晚子時不換日'}</div>
             </div>
@@ -1061,13 +1161,30 @@ function renderChart(chart) {
             </div>
           </section>
 
+          <section class="card climate-card reveal" style="--delay: 150ms">
+            <div class="card-head">
+              <div>
+                <p class="card-kicker">調候</p>
+                <h2>寒暖燥濕</h2>
+              </div>
+              <span class="mini-tag">${climate.label}</span>
+            </div>
+            <p class="climate-text">${climate.text}</p>
+            <div class="favor-row">
+              <span class="favor-label">調候參考</span>
+              ${climate.keys.map((key) => `<span class="favor-chip ${elClass(key)}">${ELEMENT_LABEL[key]}</span>`).join('')}
+            </div>
+            <p class="tiny-note">${climate.compare}</p>
+          </section>
+
           <section class="card almanac-card reveal" style="--delay: 170ms">
             <p class="card-kicker">曆法</p>
             <h2>起盤依據</h2>
             <dl class="almanac-list">
               <div><dt>農曆</dt><dd>${chart.lunarText}</dd></div>
               <div><dt>生肖</dt><dd>${chart.animal}</dd></div>
-              <div><dt>節氣</dt><dd>${chart.monthInfo.prevJie.name}後 ${chart.monthInfo.prevJie.days.toFixed(1)} 天</dd></div>
+              <div><dt>節氣</dt><dd>${chart.monthInfo.prevJie.name} ${chart.monthInfo.prevJie.text}</dd></div>
+              <div><dt>下節</dt><dd>${chart.monthInfo.nextJie.name} ${chart.monthInfo.nextJie.text}</dd></div>
               <div><dt>起運</dt><dd>${chart.luck.startLabel} · ${chart.luck.directionLabel}</dd></div>
               <div><dt>交運</dt><dd>${chart.luck.jiaoyunText}</dd></div>
             </dl>
@@ -1076,6 +1193,17 @@ function renderChart(chart) {
           </div>
         </aside>
       </div>
+
+      <section class="print-summary">
+        <h1>知命 · ${esc(name)}的命盤</h1>
+        <p>${gender}命 · 公曆 ${solarText} · 農曆 ${chart.lunarText}</p>
+        <p>四柱：${chart.fourPillarsText} · 日主 ${dm.char}${dm.elementLabel} · ${dm.strength}</p>
+        <p>大運：${chart.luck.directionLabel}　${selected.startText} 至 ${selected.endText}（${selected.stemChar}${selected.branchChar}）</p>
+        <p>所選時點：${printPeriodText}</p>
+        <p>天干留意：${printJoin(printWatch.interactions.stems, '無合沖')}</p>
+        <p>地支留意：${printJoin(printWatch.interactions.branches, '無沖合刑害')}</p>
+        <p>流年：${printWatch.year.stemChar}${printWatch.year.branchChar}（${printWatch.year.year}）　神煞：${printWatch.year.shensha.join('、') || '無'}</p>
+      </section>
 
       <p class="disclaimer">命盤為傳統術數的結構化呈現，五行比例與喜用提示僅為通俗參考，不構成命運判斷或任何現實決策建議。</p>
     </div>
@@ -1164,6 +1292,7 @@ function renderLuckCard(step, index, active) {
       </strong>
       <span class="luck-god">${step.tenGod}</span>
       <span class="luck-nayin">${step.nayin}</span>
+      <span class="luck-dates" title="${esc(`${step.startText} 至 ${step.endText}`)}">${shortDate(step.startText)}–${shortDate(step.endText)}</span>
     </button>
   `;
 }
@@ -1216,10 +1345,16 @@ function resolvePeriod(chart, step) {
 }
 
 function renderPeriodPicker(table, month, day, hours) {
+  const monthIndex = table.months.indexOf(month);
+  const nextMonth = table.months[monthIndex + 1];
+  const jieRange = month.startTs != null
+    ? `${month.name} ${formatDate(month.startTs)}${month.endTs != null ? ` 至 ${nextMonth ? `${nextMonth.name} ` : ''}${formatDate(month.endTs)}` : ''}`
+    : '';
   return `
     <div class="period-picker">
       <div class="period-head"><b>流月</b><small>${table.year.year}年 · 按十二節</small></div>
-      <div class="period-rail" role="group" aria-label="選擇流月">
+      ${jieRange ? `<p class="period-jie">${jieRange}</p>` : ''}
+      <div class="period-rail" data-rail="month" role="group" aria-label="選擇流月">
         ${table.months.map((mo, i) => `
           <button class="period-chip ${i === state.period.monthIndex ? 'is-active' : ''}" type="button" data-month="${i}" aria-pressed="${i === state.period.monthIndex}">
             <span class="p-name">${mo.name}</span>
@@ -1227,7 +1362,7 @@ function renderPeriodPicker(table, month, day, hours) {
           </button>`).join('')}
       </div>
       <div class="period-head"><b>流日</b><small>${month.name} · 共 ${month.days.length} 日</small></div>
-      <div class="period-rail day-rail" role="group" aria-label="選擇流日">
+      <div class="period-rail day-rail" data-rail="day" role="group" aria-label="選擇流日">
         ${month.days.map((dp, i) => `
           <button class="period-chip day-chip ${i === state.period.dayIndex ? 'is-active' : ''}" type="button" data-day="${i}" aria-pressed="${i === state.period.dayIndex}">
             <span class="p-name">${dp.m}/${dp.d}</span>
@@ -1236,7 +1371,7 @@ function renderPeriodPicker(table, month, day, hours) {
       </div>
       ${day ? `
       <div class="period-head"><b>流時</b><small>${day.m}/${day.d} · 子時起算</small></div>
-      <div class="period-rail hour-rail" role="group" aria-label="選擇流時">
+      <div class="period-rail hour-rail" data-rail="hour" role="group" aria-label="選擇流時">
         ${hours.map((h, i) => `
           <button class="period-chip hour-chip ${i === state.period.hourBranch ? 'is-active' : ''}" type="button" data-hour="${i}" aria-pressed="${i === state.period.hourBranch}">
             <span class="p-name">${BRANCHES[i]}時</span>
@@ -1252,8 +1387,19 @@ function renderLiunian(chart, step) {
   const { table, month, day, hours } = resolvePeriod(chart, step);
   return `
     <div class="liunian-head">
-      <h3>${step.stemChar}${step.branchChar}運 <small>${step.tenGod}</small></h3>
-      <p>${ageText(step.startAge)} 至 ${ageText(nextAge)} · ${step.startYear}–${step.startYear + 9}</p>
+      <div>
+        <h3>${step.stemChar}${step.branchChar}運 <small>${step.tenGod}</small></h3>
+        <p>${ageText(step.startAge)} 至 ${ageText(nextAge)} · ${step.startYear}–${step.startYear + 9}</p>
+        <p class="liunian-dates">${step.startText} 至 ${step.endText}</p>
+      </div>
+      <div class="liunian-tools">
+        <button class="chip-btn subtle" type="button" data-action="go-today">回今天</button>
+        <label class="year-jump">跳至
+          <select id="year-jump" aria-label="跳至流年">
+            ${step.years.map((y) => `<option value="${y.year}" ${state.period.year === y.year ? 'selected' : ''}>${y.year} ${y.stemChar}${y.branchChar}</option>`).join('')}
+          </select>
+        </label>
+      </div>
     </div>
     <div class="year-grid">
       ${step.years.map((y) => `
@@ -1404,6 +1550,34 @@ function revealLuckCard(card) {
   }
 }
 
+function bindPeriodSwipe(container) {
+  let start = null;
+  container.addEventListener('touchstart', (event) => {
+    const rail = event.target.closest('[data-rail]');
+    if (!rail || event.touches.length !== 1) {
+      start = null;
+      return;
+    }
+    start = { kind: rail.dataset.rail, x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }, { passive: true });
+  container.addEventListener('touchend', (event) => {
+    if (!start) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const kind = start.kind;
+    start = null;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    const rail = container.querySelector(`[data-rail="${kind}"]`);
+    if (!rail) return;
+    const items = [...rail.querySelectorAll('button')];
+    const current = items.findIndex((btn) => btn.classList.contains('is-active'));
+    if (current < 0) return;
+    const next = (current + (dx < 0 ? 1 : -1) + items.length) % items.length;
+    items[next].click();
+  }, { passive: true });
+}
+
 function bindResultEvents() {
   const compactBtn = document.getElementById('compact-btn');
   if (compactBtn) {
@@ -1411,6 +1585,32 @@ function bindResultEvents() {
   }
   const rail = document.querySelector('.luck-rail');
   revealLuckCard(rail?.querySelector('.luck-card.is-active'));
+  const liunianBody = document.getElementById('liunian-body');
+  if (liunianBody) {
+    liunianBody.addEventListener('keydown', (event) => {
+      const chip = event.target.closest('[data-month],[data-day],[data-hour]');
+      if (!chip) return;
+      const attr = chip.dataset.month != null ? 'data-month' : chip.dataset.day != null ? 'data-day' : 'data-hour';
+      const chips = [...liunianBody.querySelectorAll(`[${attr}]`)];
+      const current = chips.indexOf(chip);
+      let next = null;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (current + 1) % chips.length;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (current - 1 + chips.length) % chips.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = chips.length - 1;
+      if (next != null) {
+        event.preventDefault();
+        chips[next].click();
+      }
+    });
+    liunianBody.addEventListener('change', (event) => {
+      const jump = event.target.closest('#year-jump');
+      if (!jump || !state.chart || !state.period) return;
+      state.period = { ...state.period, year: Number(jump.value), monthIndex: null, dayIndex: null, hourBranch: null };
+      refreshPeriod();
+    });
+    bindPeriodSwipe(liunianBody);
+  }
   if (!rail) return;
   rail.addEventListener('keydown', (event) => {
     const card = event.target.closest('.luck-card');
@@ -1450,10 +1650,8 @@ function refreshPeriod() {
   if (watchBody) watchBody.innerHTML = renderWatch(state.chart, step);
 }
 
-function selectLuck(index, options = {}) {
-  if (!state.chart || !state.chart.luck.steps[index]) return;
+function applyLuck(index, options = {}) {
   state.selectedLuck = index;
-  state.period = null;
   let activeCard = null;
   document.querySelectorAll('.luck-card').forEach((card) => {
     const active = Number(card.dataset.luckIndex) === index;
@@ -1467,11 +1665,218 @@ function selectLuck(index, options = {}) {
   if (options.focus) activeCard?.focus({ preventScroll: true });
 }
 
+function selectLuck(index, options = {}) {
+  if (!state.chart || !state.chart.luck.steps[index]) return;
+  state.period = null;
+  applyLuck(index, options);
+}
+
+function goToday() {
+  const chart = state.chart;
+  if (!chart) return;
+  const { year } = chart.current.year;
+  const index = chart.luck.steps.findIndex((step) => step.years.some((y) => y.year === year));
+  if (index < 0) {
+    toast('今年不在所排大運範圍內');
+    return;
+  }
+  state.period = { year, monthIndex: null, dayIndex: null, hourBranch: null };
+  applyLuck(index);
+  focusChip(`[data-year="${year}"]`);
+}
+
 // ---- Records ----
+
+const PILLAR_LABELS = ['年', '月', '日', '時'];
+
+function compareCandidates() {
+  const list = loadRecords().map((record) => ({
+    id: record.id,
+    label: `${record.input.name || '未具名'} · ${compareDateText(record.input)}`,
+    input: record.input,
+  }));
+  if (state.chart) {
+    list.push({
+      id: 'current',
+      label: `當前排盤 · ${compareDateText(state.chart.input)}`,
+      input: state.chart.input,
+    });
+  }
+  return list;
+}
+
+function compareDateText(input) {
+  if (input.calendar === 'lunar' && input.lunar) {
+    return `${input.lunar.y}.${two(input.lunar.m)}.${two(input.lunar.d)}（農曆）`;
+  }
+  const s = input.solar || {};
+  return `${s.y || '----'}.${two(s.m || 0)}.${two(s.d || 0)}`;
+}
+
+function compareAnalysis(chartA, chartB) {
+  const items = [];
+  [['A', chartA], ['B', chartB]].forEach(([key, chart]) => {
+    chart.pillarList.forEach((pillar, i) => {
+      items.push({ stem: pillar.stem, branch: pillar.branch, source: `${key}${PILLAR_LABELS[i]}` });
+    });
+  });
+  const { stems, branches } = analyzeInteractions(items);
+  const isCross = (item) => item.sources.some((s) => s.startsWith('A'))
+    && item.sources.some((s) => s.startsWith('B'));
+  return { stems: stems.filter(isCross), branches: branches.filter(isCross) };
+}
+
+function compareInteractionList(list, labels) {
+  if (!list.length) return '<p class="compare-none">未見。</p>';
+  return `<div class="compare-chips">${list.map((item) => {
+    const harm = item.kind === 'he' || item.kind === 'sanhe' || item.kind === 'anhe' ? '' : ' is-harm';
+    const from = item.sources
+      .map((s) => `${labels[s[0]]}${s.slice(1)}`)
+      .join('、');
+    return `<span class="watch-item${harm}" title="${esc(from)}">${item.text}<small>${esc(from)}</small></span>`;
+  }).join('')}</div>`;
+}
+
+function compareSelect(key, value, candidates) {
+  return `<label class="compare-select"><span>${key === 'a' ? '盤一' : '盤二'}</span>
+    <select data-compare="${key}">
+      ${candidates.map((c) => `<option value="${esc(c.id)}" ${c.id === value ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}
+    </select>
+  </label>`;
+}
+
+function comparePanel(side, label, chart) {
+  const solarText = `${chart.solarDate.y}.${two(chart.solarDate.m)}.${two(chart.solarDate.d)}`;
+  const master = chart.dayMaster;
+  return `
+    <article class="compare-panel reveal" data-side="${side}">
+      <header class="compare-panel-head">
+        <span class="compare-side">${side === 'A' ? '盤一' : '盤二'}</span>
+        <h2>${esc(label)}</h2>
+        <p>${GENDER_LABEL[chart.input.gender]} · ${solarText} · ${esc(chart.lunarText)}</p>
+      </header>
+      <div class="compare-pillars">
+        ${chart.pillarList.map((pillar, i) => `
+          <div class="compare-pillar">
+            <span class="pillar-label">${PILLAR_LABELS[i]}</span>
+            <b class="${elClass(pillar.stemElement)}">${pillar.stemChar}</b>
+            <b class="${elClass(pillar.branchElement)}">${pillar.branchChar}</b>
+            <small>${pillar.nayin}</small>
+          </div>`).join('')}
+      </div>
+      <p class="compare-master">日主 <b>${master.char}${master.elementLabel}</b> · ${master.strength} · 喜${master.favorable.map((f) => f.label).join('、')}</p>
+    </article>`;
+}
+
+function renderCompare() {
+  document.title = '知命 · 雙盤合參';
+  const candidates = compareCandidates();
+  if (candidates.length < 2) {
+    app.innerHTML = `
+      <div class="wrap page">
+        <header class="page-head reveal">
+          <p class="eyebrow"><span class="eyebrow-line"></span>合參</p>
+          <h1>雙盤合參</h1>
+        </header>
+        <div class="empty-state reveal">
+          <span class="empty-seal">合</span>
+          <h2>至少需要兩張命盤</h2>
+          <p>先保存第二張命盤，或在排盤後直接回到這裡，就能把兩盤放在一起看天干地支的合沖刑害。</p>
+          <a class="btn btn-primary" href="#/">去排盤 ${icon('arrowRight', 16)}</a>
+        </div>
+      </div>`;
+    return;
+  }
+  if (!candidates.some((c) => c.id === state.compare.a)) state.compare.a = candidates[0].id;
+  if (!candidates.some((c) => c.id === state.compare.b) || state.compare.b === state.compare.a) {
+    state.compare.b = candidates.find((c) => c.id !== state.compare.a).id;
+  }
+  const left = candidates.find((c) => c.id === state.compare.a);
+  const right = candidates.find((c) => c.id === state.compare.b);
+  let chartA;
+  let chartB;
+  try {
+    chartA = computeChart(left.input);
+    chartB = computeChart(right.input);
+  } catch (err) {
+    app.innerHTML = `<div class="wrap page"><p class="form-error">${esc(err.message || '命盤無法起局')}</p></div>`;
+    return;
+  }
+  const labelA = left.input.name || '盤一';
+  const labelB = right.input.name || '盤二';
+  const { stems, branches } = compareAnalysis(chartA, chartB);
+
+  app.innerHTML = `
+    <div class="wrap page">
+      <header class="page-head reveal">
+        <p class="eyebrow"><span class="eyebrow-line"></span>合參</p>
+        <h1>雙盤合參</h1>
+        <p class="page-lede">並置兩張命盤，只看兩盤之間的合、沖、刑、害。各自盤內的互動，仍以單盤結果為準。</p>
+      </header>
+      <div class="compare-toolbar reveal">
+        ${compareSelect('a', state.compare.a, candidates)}
+        <span class="compare-vs" aria-hidden="true">合</span>
+        ${compareSelect('b', state.compare.b, candidates)}
+      </div>
+      <div class="compare-grid">
+        ${comparePanel('A', labelA, chartA)}
+        ${comparePanel('B', labelB, chartB)}
+      </div>
+      <section class="card compare-card reveal">
+        <h2>兩盤交會</h2>
+        <div class="compare-block">
+          <h3>天干</h3>
+          ${compareInteractionList(stems, { A: labelA, B: labelB })}
+        </div>
+        <div class="compare-block">
+          <h3>地支</h3>
+          ${compareInteractionList(branches, { A: labelA, B: labelB })}
+        </div>
+        <p class="compare-note">合參只看兩盤之間的四柱作用；日主、格局、大運仍需回到各自命盤細看。</p>
+      </section>
+    </div>
+  `;
+  document.querySelectorAll('[data-compare]').forEach((select) => {
+    select.addEventListener('change', () => {
+      state.compare[select.dataset.compare] = select.value;
+      renderCompare();
+    });
+  });
+}
+
+function collectRecordTags(records) {
+  const counts = new Map();
+  records.forEach((record) => {
+    (record.tags || []).forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1));
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag, count]) => ({ tag, count }));
+}
+
+function backupNoticeHtml(records) {
+  if (!backupNoticeDue(records)) return '';
+  const meta = loadBackupMeta();
+  const last = Date.parse(meta.lastExport || '');
+  const label = Number.isNaN(last)
+    ? '尚未導出過備份'
+    : `上次備份：${new Date(last).toLocaleDateString('zh-TW')}`;
+  return `
+    <div class="backup-notice reveal" id="backup-notice">
+      <div>
+        <strong>命例只存在這台裝置</strong>
+        <p>${label}。清除瀏覽器資料或更換裝置都會讓命例消失，建議導出 JSON 備份。</p>
+      </div>
+      <div class="backup-actions">
+        <button class="chip-btn" type="button" data-action="export-records">${icon('download', 15)} 導出備份</button>
+        <button class="chip-btn subtle" type="button" data-action="dismiss-backup">稍後提醒</button>
+      </div>
+    </div>`;
+}
 
 function renderRecords() {
   document.title = '知命 · 命例';
   state.records = loadRecords();
+  const tagList = collectRecordTags(state.records);
+  if (state.recordTag && !tagList.some(({ tag }) => tag === state.recordTag)) state.recordTag = '';
   const cards = state.records.map((record) => {
     let chart;
     try {
@@ -1480,28 +1885,44 @@ function renderRecords() {
       return '';
     }
     const solarText = solarDateText(chart);
+    const tags = record.tags || [];
+    const note = record.note || '';
     const searchText = [
       record.input.name || '未具名',
       chart.solarDate.y, `${chart.solarDate.m}`.padStart(2, '0'), `${chart.solarDate.d}`.padStart(2, '0'),
       solarText, chart.lunarText, chart.fourPillarsText, chart.animal, chart.timeUnknown ? '時辰未知' : '',
       `${chart.dayMaster.char}${chart.dayMaster.elementLabel}`, chart.dayMaster.strength,
+      tags.join(' '), note,
     ].join(' ');
     return `
-      <article class="record-card" data-record-id="${esc(record.id)}" data-search="${esc(searchText)}">
+      <article class="record-card" data-record-id="${esc(record.id)}" data-search="${esc(searchText)}" data-tags="|${esc(tags.join('|'))}|">
         <div class="record-head">
           <div>
             <h3>${esc(record.input.name || '未具名')} <small>${GENDER_LABEL[record.input.gender]}</small></h3>
             <p>${solarText} · ${chart.lunarText}</p>
           </div>
-          <button class="icon-btn danger" type="button" data-action="delete-record" data-id="${esc(record.id)}" aria-label="刪除命例">${icon('trash', 16)}</button>
+          <div class="record-tools">
+            <button class="icon-btn" type="button" data-action="edit-record" data-id="${esc(record.id)}" aria-label="編輯標籤與備註">${icon('edit', 16)}</button>
+            <button class="icon-btn danger" type="button" data-action="delete-record" data-id="${esc(record.id)}" aria-label="刪除命例">${icon('trash', 16)}</button>
+          </div>
         </div>
+        ${tags.length ? `<div class="record-tag-row">${tags.map((tag) => `<span class="tag-chip is-static">${esc(tag)}</span>`).join('')}</div>` : ''}
         <div class="record-pillars">
           ${chart.pillarList.map((p) => `<span><b class="${elClass(p.stemElement)}">${p.stemChar}</b><b class="${elClass(p.branchElement)}">${p.branchChar}</b></span>`).join('')}
         </div>
+        ${note ? `<p class="record-note">${esc(note)}</p>` : ''}
         <div class="record-foot">
           <span>${chart.animal}年 · 日主${chart.dayMaster.char}${chart.dayMaster.elementLabel} · ${chart.dayMaster.strength}</span>
           <button class="record-open" type="button" data-action="open-record" data-id="${esc(record.id)}">打開命盤 ${icon('arrowRight', 14)}</button>
         </div>
+        <form class="record-editor" data-editor-for="${esc(record.id)}" hidden>
+          <label>標籤 <input name="tags" type="text" maxlength="80" value="${esc(tags.join('、'))}" placeholder="家人、客戶、研究，以頓號分隔"></label>
+          <label>備註 <textarea name="note" rows="2" maxlength="500" placeholder="選填，只存在本機">${esc(note)}</textarea></label>
+          <div class="record-editor-actions">
+            <button class="chip-btn subtle" type="button" data-action="cancel-record">取消</button>
+            <button class="chip-btn" type="submit">保存</button>
+          </div>
+        </form>
       </article>
     `;
   }).join('');
@@ -1514,50 +1935,88 @@ function renderRecords() {
         <h1>已存的命盤</h1>
         <p class="page-lede">命例只保存在當前瀏覽器中。清除站點數據或將瀏覽器記錄遷移，都會讓它們消失；可隨時導出 JSON 備份。</p>
       </header>
+      ${backupNoticeHtml(state.records)}
       <div class="records-toolbar reveal">
         <div class="records-toolbar-main">
           <span id="record-count" aria-live="polite">共 ${state.records.length} 張命盤</span>
           ${hasRecords ? `<label class="record-search">
-            <input id="record-search" type="search" value="${esc(state.recordQuery)}" placeholder="搜索姓名、日期或四柱" aria-label="搜索命例" autocomplete="off">
+            <input id="record-search" type="search" value="${esc(state.recordQuery)}" placeholder="搜索姓名、標籤、備註或四柱" aria-label="搜索命例" autocomplete="off">
           </label>` : ''}
         </div>
         <div class="records-toolbar-actions">
+          ${hasRecords && state.records.length + (state.chart ? 1 : 0) >= 2 ? `<a class="chip-btn" href="#/compare">${icon('spark', 15)} 雙盤合參</a>` : ''}
           <button class="chip-btn" type="button" data-action="import-records">${icon('upload', 15)} 導入 JSON</button>
           ${hasRecords ? `<button class="chip-btn" type="button" data-action="export-records">${icon('download', 15)} 導出 JSON</button>` : ''}
           <a class="chip-btn" href="#/">${icon('plus', 15)} 新建排盤</a>
         </div>
       </div>
+      ${tagList.length ? `<div class="records-tags reveal" role="group" aria-label="按標籤篩選">
+        <button class="tag-chip ${state.recordTag ? '' : 'is-active'}" type="button" data-action="filter-tag" data-tag="">全部</button>
+        ${tagList.map(({ tag, count }) => `<button class="tag-chip ${state.recordTag === tag ? 'is-active' : ''}" type="button" data-action="filter-tag" data-tag="${esc(tag)}">${esc(tag)}<i>${count}</i></button>`).join('')}
+      </div>` : ''}
       <input type="file" id="records-import" accept="application/json,.json" hidden>
       <p class="record-empty" id="record-empty" hidden>沒有匹配的命例。</p>
       ${hasRecords ? `<div class="record-grid">${cards}</div>` : `
         <div class="empty-state reveal">
           <span class="empty-seal">錄</span>
           <h2>還沒有存下的命盤</h2>
-          <p>起一局盤，在結果頁點「保存」，它就會出現在這裏。也可以導入之前導出的 JSON 備份。</p>
+          <p>起一局盤，在結果頁點「保存」，它就會出現在這裡。也可以導入之前導出的 JSON 備份。</p>
           <a class="btn btn-primary" href="#/">去排盤 ${icon('arrowRight', 16)}</a>
         </div>`}
     </div>
   `;
   bindRecordTools();
+  if (state.recordQuery || state.recordTag) filterRecords(state.recordQuery);
+}
+
+function saveRecordMeta(id) {
+  const form = [...document.querySelectorAll('.record-editor')]
+    .find((el) => el.dataset.editorFor === id);
+  if (!form) return;
+  const tags = [...new Set(
+    form.querySelector('[name="tags"]').value
+      .split(/[、,，\s]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+  )].slice(0, 6);
+  const note = form.querySelector('[name="note"]').value.trim().slice(0, 500);
+  state.records = loadRecords();
+  const record = state.records.find((r) => r.id === id);
+  if (!record) {
+    toast('這條命例已不存在');
+    return;
+  }
+  record.tags = tags;
+  record.note = note;
+  if (!persistRecords()) {
+    toast('瀏覽器存儲不可用，未能保存');
+    return;
+  }
+  renderRecords();
+  toast('已更新命例');
 }
 
 function filterRecords(query) {
   state.recordQuery = query;
   const needle = query.trim().toLowerCase();
+  const tag = state.recordTag;
   let visible = 0;
   document.querySelectorAll('.record-card').forEach((card) => {
-    const hit = !needle || (card.dataset.search || '').toLowerCase().includes(needle);
+    const textHit = !needle || (card.dataset.search || '').toLowerCase().includes(needle);
+    const tagHit = !tag || (card.dataset.tags || '').split('|').includes(tag);
+    const hit = textHit && tagHit;
     card.hidden = !hit;
     if (hit) visible += 1;
   });
+  const filtered = !!needle || !!tag;
   const countEl = document.getElementById('record-count');
   if (countEl) {
-    countEl.textContent = needle
+    countEl.textContent = filtered
       ? `找到 ${visible} 張 / 共 ${state.records.length} 張`
       : `共 ${state.records.length} 張命盤`;
   }
   const emptyEl = document.getElementById('record-empty');
-  if (emptyEl) emptyEl.hidden = !needle || visible > 0;
+  if (emptyEl) emptyEl.hidden = !filtered || visible > 0;
 }
 
 function bindRecordTools() {
@@ -1567,6 +2026,12 @@ function bindRecordTools() {
     search.addEventListener('search', () => filterRecords(search.value));
     if (state.recordQuery) filterRecords(search.value);
   }
+  document.querySelectorAll('.record-editor').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      saveRecordMeta(form.dataset.editorFor);
+    });
+  });
   const fileInput = document.getElementById('records-import');
   if (fileInput) {
     fileInput.addEventListener('change', () => {
@@ -1631,6 +2096,7 @@ function normalizeImportedInput(raw) {
     trueSolar: !!raw.trueSolar,
     city: typeof raw.city === 'string' && CITIES.some((c) => c.name === raw.city) ? raw.city : '北京',
     lateZi: raw.lateZi !== false,
+    shareHideName: !!raw.shareHideName,
   };
   try {
     computeChart(input);
@@ -1676,16 +2142,22 @@ async function importRecords(file) {
     const stamp = typeof item?.createdAt === 'string' && !Number.isNaN(Date.parse(item.createdAt))
       ? new Date(item.createdAt).toISOString()
       : new Date().toISOString();
-    additions.push({ id, input, createdAt: stamp });
+    const meta = upgradeRecord({ input, tags: item?.tags, note: item?.note });
+    additions.push({ id, input, createdAt: stamp, tags: meta.tags, note: meta.note });
   }
   if (!additions.length) {
     toast(`沒有新增命例${skipped ? `，跳過 ${skipped} 條` : ''}`);
     return;
   }
   state.records = [...additions, ...state.records];
+  if (state.records.length > MAX_RECORDS) {
+    state.records = loadRecords();
+    toast(`命例最多 ${MAX_RECORDS} 張，請先匯出備份並整理`);
+    return;
+  }
   if (!persistRecords()) {
     state.records = loadRecords();
-    toast('瀏覽器存儲不可用，未能導入');
+    toast('儲存空間不足，未能導入；請先匯出備份');
     return;
   }
   state.recordQuery = '';
@@ -1793,10 +2265,11 @@ function renderAbout() {
 
 // ---- Actions ----
 
-function chartToText(chart) {
+function chartToText(chart, options = {}) {
   const lines = [];
   lines.push(`知命 · 四柱排盤`);
-  lines.push(`${chart.input.name || '未具名'} ${GENDER_LABEL[chart.input.gender]}命`);
+  const displayName = options.hideName ? '未具名' : chart.input.name || '未具名';
+  lines.push(`${displayName} ${GENDER_LABEL[chart.input.gender]}命`);
   lines.push(`公曆：${solarDateText(chart)}`);
   lines.push(`農曆：${chart.lunarText}`);
   lines.push(`四柱：${chart.fourPillarsText}`);
@@ -1831,24 +2304,195 @@ function saveCurrent() {
     toast('這張命盤已在命例中');
     return;
   }
+  if (state.records.length >= MAX_RECORDS) {
+    toast(`命例已達 ${MAX_RECORDS} 張，請先匯出備份並刪除部分`);
+    return;
+  }
   state.records.unshift({
     id,
     input,
     createdAt: new Date().toISOString(),
+    tags: [],
+    note: '',
   });
-  toast(persistRecords() ? '已保存到命例' : '瀏覽器存儲不可用，未能保存');
+  if (!persistRecords()) {
+    state.records = loadRecords();
+    toast('儲存空間不足，未能保存；請先匯出備份');
+    return;
+  }
+  toast('已保存到命例');
 }
 
 function shareCurrent() {
   if (!state.chart) return;
-  const payload = encodeInput({ v: 2, input: state.chart.input, view: viewFromState() });
+  const hide = !!state.chart.input.shareHideName;
+  const input = hide ? { ...state.chart.input, name: '' } : state.chart.input;
+  const payload = encodeInput({ v: 2, input, view: viewFromState() });
   const url = `${location.origin}${location.pathname}#/view/${payload}`;
-  copyText(url);
+  copyText(url, hide ? '已複製分享鏈接（不含姓名）' : '已複製分享鏈接');
 }
 
 function copyCurrent() {
   if (!state.chart) return;
-  copyText(chartToText(state.chart));
+  const hide = !!state.chart.input.shareHideName;
+  copyText(chartToText(state.chart, { hideName: hide }), hide ? '已複製（不含姓名）' : '已複製到剪貼板');
+}
+
+const ELEMENT_INK = {
+  wood: '#4c7350',
+  fire: '#a63d30',
+  earth: '#8a6a42',
+  metal: '#6d675b',
+  water: '#3d5f78',
+};
+
+function exportChartImage() {
+  const chart = state.chart;
+  if (!chart) return;
+  const step = chart.luck.steps[state.selectedLuck] || chart.luck.steps[0];
+  const watch = watchData(chart, step);
+  const name = chart.input.shareHideName ? '未具名' : chart.input.name || '未具名';
+  const canvas = document.createElement('canvas');
+  canvas.width = 900;
+  canvas.height = 1180;
+  const ctx = canvas.getContext('2d');
+  const serif = '"Songti TC", "Noto Serif TC", "STSong", serif';
+  const sans = '"PingFang TC", "Noto Sans TC", sans-serif';
+  ctx.fillStyle = '#f4efe4';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#d8ccb6';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(36, 36, canvas.width - 72, canvas.height - 72);
+
+  ctx.fillStyle = '#2b2520';
+  ctx.font = `600 44px ${serif}`;
+  ctx.fillText('知命', 76, 112);
+  ctx.font = `16px ${sans}`;
+  ctx.fillStyle = '#8a7f72';
+  ctx.fillText('四柱八字 · 本地排盤', 76, 142);
+
+  ctx.fillStyle = '#2b2520';
+  ctx.font = `600 30px ${serif}`;
+  ctx.fillText(name, 76, 214);
+  const nameWidth = ctx.measureText(name).width;
+  ctx.font = `16px ${sans}`;
+  ctx.fillStyle = '#5c534a';
+  ctx.fillText(`${GENDER_LABEL[chart.input.gender]}命`, 76 + nameWidth + 14, 214);
+  ctx.fillText(`公曆 ${solarDateText(chart)}`, 76, 248);
+  ctx.fillText(`農曆 ${chart.lunarText}`, 76, 276);
+
+  const labels = ['年柱', '月柱', '日柱', '時柱'];
+  const keys = ['year', 'month', 'day', 'hour'];
+  const colWidth = 188;
+  const startX = 76;
+  const top = 320;
+  ctx.strokeStyle = '#ded3bf';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(startX, top, colWidth * 4, 300);
+  keys.forEach((key, i) => {
+    const x = startX + colWidth * i + colWidth / 2;
+    const pillar = chart.pillars[key];
+    ctx.fillStyle = '#8a7f72';
+    ctx.font = `16px ${serif}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x, top + 36);
+    if (pillar) {
+      ctx.fillStyle = ELEMENT_INK[elementOfStem(pillar.stem)] || '#2b2520';
+      ctx.font = `600 76px ${serif}`;
+      ctx.fillText(pillar.stemChar, x, top + 128);
+      ctx.fillStyle = ELEMENT_INK[elementOfBranch(pillar.branch)] || '#2b2520';
+      ctx.fillText(pillar.branchChar, x, top + 210);
+      ctx.fillStyle = '#5c534a';
+      ctx.font = `15px ${sans}`;
+      ctx.fillText(pillar.tenGod, x, top + 248);
+      ctx.fillStyle = '#8a7f72';
+      ctx.font = `13px ${sans}`;
+      ctx.fillText(pillar.nayin, x, top + 274);
+    } else {
+      ctx.fillStyle = '#8a7f72';
+      ctx.font = `600 60px ${serif}`;
+      ctx.fillText('—', x, top + 160);
+    }
+    if (i > 0) {
+      ctx.strokeStyle = '#e7ddcb';
+      ctx.beginPath();
+      ctx.moveTo(startX + colWidth * i, top);
+      ctx.lineTo(startX + colWidth * i, top + 300);
+      ctx.stroke();
+    }
+  });
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#2b2520';
+  ctx.font = `600 20px ${serif}`;
+  ctx.fillText(`日主 ${chart.dayMaster.char}${chart.dayMaster.elementLabel} · ${chart.dayMaster.strength}`, 76, 678);
+  ctx.font = `16px ${sans}`;
+  ctx.fillStyle = '#5c534a';
+  ctx.fillText(`五行：${chart.elements.map((e) => `${e.label}${e.percent}%`).join('　')}`, 76, 710);
+  ctx.fillText(`大運：${chart.luck.directionLabel} · ${chart.luck.startLabel}起運 · ${chart.luck.jiaoyunText}交運`, 76, 742);
+  ctx.fillText(`運程：${step.startText} 至 ${step.endText}（${step.stemChar}${step.branchChar} ${step.tenGod}）`, 76, 774);
+
+  ctx.fillStyle = '#2b2520';
+  ctx.font = `600 18px ${serif}`;
+  ctx.fillText('所選時點', 76, 828);
+  ctx.font = `15px ${sans}`;
+  ctx.fillStyle = '#5c534a';
+  const periodText = watch.day && watch.hour
+    ? `${watch.day.y}年${watch.day.m}月${watch.day.d}日 ${BRANCHES[watch.hour.branch]}時（${watch.hour.stemChar}${watch.hour.branchChar}）`
+    : '—';
+  ctx.fillText(periodText, 76, 856);
+  const join = (list, empty) => (list.length ? list.map((item) => item.text).join('；') : empty);
+  const drawParagraph = (text, x, y, lineHeight) => {
+    let line = '';
+    for (const ch of Array.from(text)) {
+      if (line && ctx.measureText(line + ch).width > canvas.width - x - 76) {
+        ctx.fillText(line, x, y);
+        line = ch;
+        y += lineHeight;
+      } else {
+        line += ch;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+    }
+    return y;
+  };
+  let notesY = drawParagraph(`天干留意：${join(watch.interactions.stems, '無合沖')}`, 76, 884, 22);
+  drawParagraph(`地支留意：${join(watch.interactions.branches, '無沖合刑害')}`, 76, notesY, 22);
+
+  ctx.fillStyle = '#8a7f72';
+  ctx.font = `13px ${sans}`;
+  ctx.fillText('五行比例、調候與喜用僅為傳統術數的通俗參考，不構成任何現實決策建議。', 76, 1116);
+
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      toast('圖片生成失敗');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    a.href = url;
+    a.download = `知命-${name}-${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('命盤圖片已生成');
+  }, 'image/png');
+}
+
+function printCompact() {
+  document.body.classList.add('print-compact');
+  const done = () => {
+    document.body.classList.remove('print-compact');
+    window.removeEventListener('afterprint', done);
+  };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 60);
+  setTimeout(done, 4000);
 }
 
 function editCurrent() {
@@ -1869,6 +2513,8 @@ function exportRecords() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const meta = loadBackupMeta();
+  saveBackupMeta({ ...meta, lastExport: new Date().toISOString(), dismissedAt: '' });
   toast('命例已導出');
 }
 
@@ -1927,7 +2573,16 @@ function handleAction(action, target) {
     case 'share': shareCurrent(); break;
     case 'copy': copyCurrent(); break;
     case 'print': window.print(); break;
+    case 'print-compact': printCompact(); break;
+    case 'png': exportChartImage(); break;
+    case 'go-today': goToday(); break;
     case 'edit': editCurrent(); break;
+    case 'dismiss-backup': {
+      const meta = loadBackupMeta();
+      saveBackupMeta({ ...meta, dismissedAt: new Date().toISOString() });
+      document.getElementById('backup-notice')?.remove();
+      break;
+    }
     case 'compact': {
       state.compact = !state.compact;
       const card = document.querySelector('.chart-card');
@@ -1939,6 +2594,25 @@ function handleAction(action, target) {
     case 'import-records': document.getElementById('records-import')?.click(); break;
     case 'open-record': openRecord(target.dataset.id); break;
     case 'delete-record': deleteRecord(target.dataset.id, target); break;
+    case 'edit-record': {
+      const form = target.closest('.record-card')?.querySelector('.record-editor');
+      if (!form) break;
+      const opening = form.hidden;
+      document.querySelectorAll('.record-editor').forEach((el) => { el.hidden = true; });
+      form.hidden = !opening;
+      if (opening) form.querySelector('[name="tags"]')?.focus();
+      break;
+    }
+    case 'cancel-record': {
+      const form = target.closest('.record-editor');
+      if (form) form.hidden = true;
+      break;
+    }
+    case 'filter-tag': {
+      state.recordTag = target.dataset.tag || '';
+      renderRecords();
+      break;
+    }
     default: break;
   }
 }
@@ -2010,7 +2684,7 @@ document.addEventListener('click', (event) => {
     return;
   }
   const recordCard = event.target.closest('.record-card');
-  if (recordCard && !event.target.closest('button')) {
+  if (recordCard && !event.target.closest('button, input, textarea, label, form')) {
     openRecord(recordCard.dataset.recordId);
   }
 });
