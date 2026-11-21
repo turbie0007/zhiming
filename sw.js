@@ -1,4 +1,4 @@
-const VERSION = 'zhiming-20261134';
+const VERSION = 'zhiming-20261135';
 const PRECACHE = [
   './',
   './index.html',
@@ -8,14 +8,14 @@ const PRECACHE = [
   './assets/icons/icon-512.png',
   './assets/icons/icon-1024.png',
   './assets/icons/apple-touch-icon.png',
-  './assets/css/style.css?v=20261134',
-  './assets/js/app.js?v=20261134',
-  './assets/js/astro.js?v=20261134',
-  './assets/js/bazi.js?v=20261134',
-  './assets/js/data.js?v=20261134',
-  './assets/js/glossary.js?v=20261134',
-  './assets/js/learn.js?v=20261134',
-  './assets/js/solar-terms.js?v=20261134',
+  './assets/css/style.css?v=20261135',
+  './assets/js/app.js?v=20261135',
+  './assets/js/astro.js?v=20261135',
+  './assets/js/bazi.js?v=20261135',
+  './assets/js/data.js?v=20261135',
+  './assets/js/glossary.js?v=20261135',
+  './assets/js/learn.js?v=20261135',
+  './assets/js/solar-terms.js?v=20261135',
 ];
 
 self.addEventListener('install', (event) => {

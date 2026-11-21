@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261134';
+} from './data.js?v=20261135';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261134';
+} from './bazi.js?v=20261135';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261134';
-import { ARTICLES } from './learn.js?v=20261134';
-import { GLOSSARY } from './glossary.js?v=20261134';
+} from './astro.js?v=20261135';
+import { ARTICLES } from './learn.js?v=20261135';
+import { GLOSSARY } from './glossary.js?v=20261135';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -805,6 +805,37 @@ function defaultLuckIndex(chart) {
   return y >= steps[steps.length - 1].startYear ? steps.length - 1 : 0;
 }
 
+function viewFromState() {
+  const p = state.period;
+  if (!p) return { luck: state.selectedLuck };
+  return {
+    luck: state.selectedLuck,
+    year: p.year,
+    month: p.monthIndex,
+    day: p.dayIndex,
+    hour: p.hourBranch,
+  };
+}
+
+function restoreView(chart, view) {
+  const steps = chart.luck.steps;
+  const luck = Number.isInteger(view?.luck) && view.luck >= 0 && view.luck < steps.length
+    ? view.luck
+    : defaultLuckIndex(chart);
+  state.selectedLuck = luck;
+  const years = steps[luck].years.map((y) => y.year);
+  if (view && years.includes(view.year)) {
+    state.period = {
+      year: view.year,
+      monthIndex: Number.isInteger(view.month) ? view.month : null,
+      dayIndex: Number.isInteger(view.day) ? view.day : null,
+      hourBranch: Number.isInteger(view.hour) ? view.hour : null,
+    };
+  } else {
+    state.period = null;
+  }
+}
+
 function renderChartPage() {
   if (!state.chart) {
     const stored = loadLastInput();
@@ -827,17 +858,18 @@ function renderChartPage() {
 }
 
 function renderShared(payload) {
-  const input = decodeInput(payload);
-  if (!input) {
+  const raw = decodeInput(payload);
+  if (!raw) {
     renderError('這枚分享鏈接似乎不完整');
     return;
   }
+  const input = raw.v === 2 && raw.input ? raw.input : raw;
+  const view = raw.v === 2 ? raw.view : null;
   try {
     const chart = computeChart(input);
     state.chart = chart;
     state.formInput = input;
-    state.selectedLuck = defaultLuckIndex(chart);
-    state.period = null;
+    restoreView(chart, view);
     renderChart(chart);
   } catch (err) {
     renderError(err.message || '無法解讀這枚鏈接');
@@ -1809,7 +1841,7 @@ function saveCurrent() {
 
 function shareCurrent() {
   if (!state.chart) return;
-  const payload = encodeInput(state.chart.input);
+  const payload = encodeInput({ v: 2, input: state.chart.input, view: viewFromState() });
   const url = `${location.origin}${location.pathname}#/view/${payload}`;
   copyText(url);
 }
