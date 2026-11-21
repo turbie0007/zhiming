@@ -1833,6 +1833,129 @@ input, select, textarea {
   color: var(--ink-3);
 }
 
+.year-cell {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+.year-cell:hover {
+  border-color: var(--ink-3);
+}
+
+.year-cell.is-selected {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+}
+
+.period-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.period-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.period-head b {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.period-head small {
+  font-size: 9.5px;
+  color: var(--ink-3);
+}
+
+.period-rail {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 6px;
+  scrollbar-width: thin;
+}
+
+.period-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 50px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.period-chip:hover {
+  border-color: var(--ink-3);
+}
+
+.period-chip .p-name {
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.period-chip strong {
+  display: flex;
+  gap: 1px;
+  font-family: var(--serif);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.period-chip strong b {
+  font-size: 14px;
+}
+
+.period-chip.is-active {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+}
+
+.day-chip {
+  min-width: 46px;
+}
+
+.day-chip strong b {
+  font-size: 12.5px;
+}
+
+.hour-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+}
+
+.hour-chip {
+  min-width: 0;
+}
+
+.hour-chip .p-name {
+  font-size: 8px;
+}
+
+@media (min-width: 720px) {
+  .day-rail {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+
 /* ---------- Interactions / period stars ---------- */
 
 .watch-card .card-head {
@@ -3359,6 +3482,10 @@ input, select, textarea {
   .year-grid,
   .palace-grid {
     break-inside: avoid;
+  }
+
+  .period-picker {
+    display: none;
   }
 
   .chart-layout {

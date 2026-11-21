@@ -1,15 +1,15 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261125';
+} from './data.js?v=20261132';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
-  analyzeInteractions,
-} from './bazi.js?v=20261125';
+  analyzeInteractions, periodTable, hourPeriod,
+} from './bazi.js?v=20261132';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261125';
-import { ARTICLES } from './learn.js?v=20261125';
+} from './astro.js?v=20261132';
+import { ARTICLES } from './learn.js?v=20261132';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -45,6 +45,7 @@ const state = {
   chart: null,
   formInput: null,
   selectedLuck: 0,
+  period: null,
   compact: false,
   records: [],
   recordQuery: '',
@@ -659,6 +660,7 @@ function initHomeForm() {
       state.chart = chart;
       state.formInput = inputData;
       state.selectedLuck = defaultLuckIndex(chart);
+      state.period = null;
       saveLastInput(inputData);
       navigate('#/chart');
     } catch (err) {
@@ -757,6 +759,7 @@ function renderChartPage() {
         state.chart = computeChart(stored);
         state.formInput = stored;
         state.selectedLuck = defaultLuckIndex(state.chart);
+        state.period = null;
       } catch {
         state.chart = null;
       }
@@ -780,6 +783,7 @@ function renderShared(payload) {
     state.chart = chart;
     state.formInput = input;
     state.selectedLuck = defaultLuckIndex(chart);
+    state.period = null;
     renderChart(chart);
   } catch (err) {
     renderError(err.message || '無法解讀這枚鏈接');
@@ -1078,8 +1082,88 @@ function renderLuckCard(step, index, active) {
   `;
 }
 
+const DAY_MS = 86400000;
+
+function resolvePeriod(chart, step) {
+  if (!state.period) state.period = { year: null, monthIndex: null, dayIndex: null };
+  const years = step.years.map((y) => y.year);
+  if (!years.includes(state.period.year)) {
+    const currentYear = step.years.find((y) => y.isCurrent);
+    state.period.year = currentYear ? currentYear.year : years[0];
+    state.period.monthIndex = null;
+    state.period.dayIndex = null;
+  }
+  const table = periodTable(chart, state.period.year);
+  const nowTs = chart.current.ts;
+  const month = table.months[state.period.monthIndex];
+  if (!month || !month.days.length) {
+    const idx = table.months.findIndex((mo) => mo.startTs != null && nowTs >= mo.startTs && nowTs < mo.endTs);
+    state.period.monthIndex = idx >= 0 ? idx : 0;
+    state.period.dayIndex = null;
+    state.period.hourBranch = null;
+  }
+  const days = table.months[state.period.monthIndex].days;
+  if (state.period.dayIndex == null || !days[state.period.dayIndex]) {
+    const todayTs = Math.floor(nowTs / DAY_MS) * DAY_MS;
+    const idx = days.findIndex((d) => d.ts === todayTs);
+    state.period.dayIndex = idx >= 0 ? idx : 0;
+    state.period.hourBranch = null;
+  }
+  const day = days[state.period.dayIndex] || null;
+  const hours = day ? BRANCHES.map((_, i) => hourPeriod(chart, day.stem, i)) : [];
+  if (day && (state.period.hourBranch == null || !hours[state.period.hourBranch])) {
+    const todayTs = Math.floor(nowTs / DAY_MS) * DAY_MS;
+    if (day.ts === todayTs) {
+      const h = new Date(nowTs).getUTCHours();
+      state.period.hourBranch = Math.floor(((h + 1) % 24) / 2);
+    } else {
+      state.period.hourBranch = 0;
+    }
+  }
+  return {
+    table,
+    month: table.months[state.period.monthIndex],
+    day,
+    hours,
+    hour: day ? hours[state.period.hourBranch] : null,
+  };
+}
+
+function renderPeriodPicker(table, month, day, hours) {
+  return `
+    <div class="period-picker">
+      <div class="period-head"><b>流月</b><small>${table.year.year}年 · 按十二節</small></div>
+      <div class="period-rail" role="group" aria-label="選擇流月">
+        ${table.months.map((mo, i) => `
+          <button class="period-chip ${i === state.period.monthIndex ? 'is-active' : ''}" type="button" data-month="${i}" aria-pressed="${i === state.period.monthIndex}">
+            <span class="p-name">${mo.name}</span>
+            <strong><b class="${elClass(elementForStemChar(mo.stemChar))}">${mo.stemChar}</b><b class="${elClass(elementForBranchChar(mo.branchChar))}">${mo.branchChar}</b></strong>
+          </button>`).join('')}
+      </div>
+      <div class="period-head"><b>流日</b><small>${month.name} · 共 ${month.days.length} 日</small></div>
+      <div class="period-rail day-rail" role="group" aria-label="選擇流日">
+        ${month.days.map((dp, i) => `
+          <button class="period-chip day-chip ${i === state.period.dayIndex ? 'is-active' : ''}" type="button" data-day="${i}" aria-pressed="${i === state.period.dayIndex}">
+            <span class="p-name">${dp.m}/${dp.d}</span>
+            <strong><b class="${elClass(elementForStemChar(dp.stemChar))}">${dp.stemChar}</b><b class="${elClass(elementForBranchChar(dp.branchChar))}">${dp.branchChar}</b></strong>
+          </button>`).join('')}
+      </div>
+      ${day ? `
+      <div class="period-head"><b>流時</b><small>${day.m}/${day.d} · 子時起算</small></div>
+      <div class="period-rail hour-rail" role="group" aria-label="選擇流時">
+        ${hours.map((h, i) => `
+          <button class="period-chip hour-chip ${i === state.period.hourBranch ? 'is-active' : ''}" type="button" data-hour="${i}" aria-pressed="${i === state.period.hourBranch}">
+            <span class="p-name">${BRANCHES[i]}時</span>
+            <strong><b class="${elClass(elementForStemChar(h.stemChar))}">${h.stemChar}</b><b class="${elClass(elementForBranchChar(h.branchChar))}">${h.branchChar}</b></strong>
+          </button>`).join('')}
+      </div>` : ''}
+    </div>
+  `;
+}
+
 function renderLiunian(chart, step) {
   const nextAge = step.startAge + 10;
+  const { table, month, day, hours } = resolvePeriod(chart, step);
   return `
     <div class="liunian-head">
       <h3>${step.stemChar}${step.branchChar}運 <small>${step.tenGod}</small></h3>
@@ -1087,14 +1171,15 @@ function renderLiunian(chart, step) {
     </div>
     <div class="year-grid">
       ${step.years.map((y) => `
-        <div class="year-cell ${y.isCurrent ? 'is-now' : ''}">
+        <button class="year-cell ${y.isCurrent ? 'is-now' : ''} ${state.period.year === y.year ? 'is-selected' : ''}" type="button" data-year="${y.year}" aria-pressed="${state.period.year === y.year}">
           <span class="year-num">${y.year}${y.isCurrent ? '<i>今</i>' : ''}</span>
           <strong class="year-chars">
             <b class="${elClass(elementForStemChar(y.stemChar))}">${y.stemChar}</b><b class="${elClass(elementForBranchChar(y.branchChar))}">${y.branchChar}</b>
           </strong>
           <span class="year-god">${y.tenGod}</span>
-        </div>`).join('')}
+        </button>`).join('')}
     </div>
+    ${renderPeriodPicker(table, month, day, hours)}
   `;
 }
 
@@ -1102,32 +1187,30 @@ const WATCH_PILLAR_KEYS = ['year', 'month', 'day', 'hour'];
 const WATCH_PILLAR_LABELS = ['年柱', '月柱', '日柱', '時柱'];
 
 function watchData(chart, step) {
-  const current = chart.current;
-  const isCurrentStep = current.luckIndex === state.selectedLuck;
-  const year = isCurrentStep ? current.year : step.years[0];
+  const { table, month, day, hour } = resolvePeriod(chart, step);
+  const year = table.year;
   const natal = WATCH_PILLAR_KEYS
     .map((key, i) => {
       const pillar = chart.pillars[key];
       return pillar ? { stem: pillar.stem, branch: pillar.branch, source: WATCH_PILLAR_LABELS[i] } : null;
     })
     .filter(Boolean);
-  const currentPeriods = isCurrentStep
-    ? [
-        { stem: current.month.stem, branch: current.month.branch, source: '流月' },
-        { stem: current.day.stem, branch: current.day.branch, source: '流日' },
-      ]
-    : [];
+  const periods = [
+    { stem: year.stem, branch: year.branch, source: '流年' },
+    month ? { stem: month.stem, branch: month.branch, source: '流月' } : null,
+    day ? { stem: day.stem, branch: day.branch, source: '流日' } : null,
+    hour ? { stem: hour.stem, branch: hour.branch, source: '流時' } : null,
+  ].filter(Boolean);
   const interactions = analyzeInteractions([
     ...natal,
     { stem: step.stem, branch: step.branch, source: '大運' },
-    { stem: year.stem, branch: year.branch, source: '流年' },
-    ...currentPeriods,
+    ...periods,
   ]);
-  return { current, year, isCurrentStep, interactions };
+  return { year, month, day, hour, interactions };
 }
 
 function renderWatch(chart, step) {
-  const { current, year, isCurrentStep, interactions } = watchData(chart, step);
+  const { year, month, day, hour, interactions } = watchData(chart, step);
   const items = (list, empty) => {
     if (!list.length) return `<span class="muted">${empty}</span>`;
     return list.map((item) => {
@@ -1150,12 +1233,11 @@ function renderWatch(chart, step) {
       ${row('地支留意', '', items(interactions.branches, '無沖合刑害'))}
       ${row('大運神煞', `${step.stemChar}${step.branchChar}`, stars(step.shensha), true)}
       ${row('流年神煞', `${year.stemChar}${year.branchChar} · ${year.year}`, stars(year.shensha), true)}
-      ${isCurrentStep ? row('流月神煞', `${current.month.stemChar}${current.month.branchChar} · 今`, stars(current.month.shensha), true) : ''}
-      ${isCurrentStep ? row('流日神煞', `${current.day.stemChar}${current.day.branchChar} · 今日`, stars(current.day.shensha), true) : ''}
+      ${month ? row('流月神煞', `${month.stemChar}${month.branchChar} · ${month.name}`, stars(month.shensha), true) : ''}
+      ${day ? row('流日神煞', `${day.stemChar}${day.branchChar} · ${day.m}/${day.d}`, stars(day.shensha), true) : ''}
+      ${hour ? row('流時神煞', `${hour.stemChar}${hour.branchChar} · ${BRANCHES[hour.branch]}時`, stars(hour.shensha), true) : ''}
     </div>
-    <p class="watch-note">${isCurrentStep
-      ? `取四柱、大運、流年，兼看流月、流日（北京時間 ${current.dateText}）。`
-      : '取四柱、所選大運與首年流年。'}</p>
+    <p class="watch-note">取四柱、大運、流年、流月、流日、流時。所選時點：${day && hour ? `${day.y}年${day.m}月${day.d}日 ${BRANCHES[hour.branch]}時（北京時間）` : '—'}。</p>
   `;
 }
 
@@ -1261,9 +1343,31 @@ function bindResultEvents() {
   });
 }
 
+function focusChip(selector) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
+}
+
+function refreshPeriod() {
+  const step = state.chart.luck.steps[state.selectedLuck];
+  if (!step) return;
+  const body = document.getElementById('liunian-body');
+  if (body) {
+    body.innerHTML = renderLiunian(state.chart, step);
+    body.setAttribute('aria-labelledby', `luck-tab-${state.selectedLuck}`);
+  }
+  const watchBody = document.getElementById('watch-body');
+  if (watchBody) watchBody.innerHTML = renderWatch(state.chart, step);
+}
+
 function selectLuck(index, options = {}) {
   if (!state.chart || !state.chart.luck.steps[index]) return;
   state.selectedLuck = index;
+  state.period = null;
   let activeCard = null;
   document.querySelectorAll('.luck-card').forEach((card) => {
     const active = Number(card.dataset.luckIndex) === index;
@@ -1272,13 +1376,7 @@ function selectLuck(index, options = {}) {
     card.tabIndex = active ? 0 : -1;
     if (active) activeCard = card;
   });
-  const body = document.getElementById('liunian-body');
-  if (body) {
-    body.innerHTML = renderLiunian(state.chart, state.chart.luck.steps[index]);
-    body.setAttribute('aria-labelledby', `luck-tab-${index}`);
-  }
-  const watchBody = document.getElementById('watch-body');
-  if (watchBody) watchBody.innerHTML = renderWatch(state.chart, state.chart.luck.steps[index]);
+  refreshPeriod();
   revealLuckCard(activeCard);
   if (options.focus) activeCard?.focus({ preventScroll: true });
 }
@@ -1700,6 +1798,7 @@ function openRecord(id) {
     state.chart = chart;
     state.formInput = record.input;
     state.selectedLuck = defaultLuckIndex(chart);
+    state.period = null;
     navigate('#/chart');
   } catch (err) {
     toast(err.message || '命例無法起盤');
@@ -1779,6 +1878,34 @@ document.addEventListener('click', (event) => {
   const luckEl = event.target.closest('[data-luck-index]');
   if (luckEl) {
     selectLuck(Number(luckEl.dataset.luckIndex));
+    return;
+  }
+  const yearEl = event.target.closest('[data-year]');
+  if (yearEl && state.chart) {
+    state.period = { ...state.period, year: Number(yearEl.dataset.year), monthIndex: null, dayIndex: null, hourBranch: null };
+    refreshPeriod();
+    focusChip(`[data-year="${state.period.year}"]`);
+    return;
+  }
+  const monthEl = event.target.closest('[data-month]');
+  if (monthEl && state.chart && state.period) {
+    state.period = { ...state.period, monthIndex: Number(monthEl.dataset.month), dayIndex: null, hourBranch: null };
+    refreshPeriod();
+    focusChip(`[data-month="${state.period.monthIndex}"]`);
+    return;
+  }
+  const dayEl = event.target.closest('[data-day]');
+  if (dayEl && state.chart && state.period) {
+    state.period = { ...state.period, dayIndex: Number(dayEl.dataset.day), hourBranch: null };
+    refreshPeriod();
+    focusChip(`[data-day="${state.period.dayIndex}"]`);
+    return;
+  }
+  const hourEl = event.target.closest('[data-hour]');
+  if (hourEl && state.chart && state.period) {
+    state.period = { ...state.period, hourBranch: Number(hourEl.dataset.hour) };
+    refreshPeriod();
+    focusChip(`[data-hour="${state.period.hourBranch}"]`);
     return;
   }
   const recordCard = event.target.closest('.record-card');

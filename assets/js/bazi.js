@@ -2,14 +2,21 @@ import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
   JIE_MAP, CITIES,
-} from './data.js?v=20261125';
+} from './data.js?v=20261132';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
-} from './astro.js?v=20261125';
+  getSolarTermTs, getSolarTermName,
+} from './astro.js?v=20261132';
 
 const DAY_MS = 86400000;
+
+// 立春起算的十二節：寅月到丑月
+const JIE_MONTHS = [
+  [2, 2], [4, 3], [6, 4], [8, 5], [10, 6], [12, 7],
+  [14, 8], [16, 9], [18, 10], [20, 11], [22, 0], [0, 1],
+];
 const GENERATES = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
 const CONTROLS = { wood: 'earth', fire: 'metal', earth: 'water', metal: 'wood', water: 'fire' };
 const GOD_GROUP = {
@@ -151,6 +158,96 @@ function shenshaFor(pillar, ctx) {
   else if (ctx.yearKong.includes(b)) push('年空');
 
   return labels;
+}
+
+export function hourPeriod(chart, dayStem, hourBranch) {
+  const ctx = natalCtx(chart);
+  const stem = mod((dayStem % 5) * 2 + hourBranch, 10);
+  return {
+    branch: hourBranch,
+    stem,
+    stemChar: STEMS[stem],
+    branchChar: BRANCHES[hourBranch],
+    tenGod: getTenGod(ctx.dayStem, stem),
+    shensha: shenshaFor({ stem, branch: hourBranch }, ctx),
+  };
+}
+
+function natalCtx(chart) {
+  const year = chart.pillars.year;
+  const month = chart.pillars.month;
+  const day = chart.pillars.day;
+  return {
+    dayStem: day.stem,
+    yearStem: year.stem,
+    yearBranch: year.branch,
+    dayBranch: day.branch,
+    monthBranch: month.branch,
+    dayKong: xunKong(day.index),
+    yearKong: xunKong(year.index),
+  };
+}
+
+export function periodTable(chart, year) {
+  const ctx = natalCtx(chart);
+  const dayStem = ctx.dayStem;
+  const yearIdx = mod(year - 4, 60);
+  const yearStem = yearIdx % 10;
+  const yearBranch = yearIdx % 12;
+
+  const yearInfo = {
+    year,
+    index: yearIdx,
+    stem: yearStem,
+    branch: yearBranch,
+    stemChar: STEMS[yearStem],
+    branchChar: BRANCHES[yearBranch],
+    tenGod: getTenGod(dayStem, yearStem),
+    stage: getStage(dayStem, yearBranch),
+    shensha: shenshaFor({ stem: yearStem, branch: yearBranch }, ctx),
+  };
+
+  const starts = JIE_MONTHS.map(([termIndex], i) => getSolarTermTs(i === 11 ? year + 1 : year, termIndex));
+  const months = JIE_MONTHS.map(([termIndex, branch], i) => {
+    const startTs = starts[i];
+    const nextStart = starts[i + 1] ?? getSolarTermTs(year + 1, 2);
+    const stem = monthStemFor(yearStem, branch);
+    const days = [];
+    if (startTs != null && nextStart != null) {
+      const end = Math.floor(nextStart / DAY_MS) * DAY_MS;
+      for (let ts = Math.floor(startTs / DAY_MS) * DAY_MS; ts < end; ts += DAY_MS) {
+        const parts = tsParts(ts);
+        const idx = mod(Math.floor(ts / DAY_MS) + 25567 + 10, 60);
+        days.push({
+          ts,
+          y: parts.y,
+          m: parts.m,
+          d: parts.d,
+          stem: idx % 10,
+          branch: idx % 12,
+          stemChar: STEMS[idx % 10],
+          branchChar: BRANCHES[idx % 12],
+          tenGod: getTenGod(dayStem, idx % 10),
+          shensha: shenshaFor({ stem: idx % 10, branch: idx % 12 }, ctx),
+        });
+      }
+    }
+    return {
+      index: i,
+      name: getSolarTermName(termIndex),
+      startTs,
+      endTs: nextStart,
+      stem,
+      branch,
+      stemChar: STEMS[stem],
+      branchChar: BRANCHES[branch],
+      tenGod: getTenGod(dayStem, stem),
+      shensha: shenshaFor({ stem, branch }, ctx),
+      days,
+    };
+  });
+
+  return { year: yearInfo, months };
 }
 
 function makePillar(idx, dayStem, ctx, isDay = false) {
