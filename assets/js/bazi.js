@@ -1,0 +1,702 @@
+import {
+  STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
+  ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
+  JIE_MAP, CITIES,
+} from './data.js?v=20261124';
+import {
+  mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
+  lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
+  lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
+} from './astro.js?v=20261124';
+
+const DAY_MS = 86400000;
+const GENERATES = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
+const CONTROLS = { wood: 'earth', fire: 'metal', earth: 'water', metal: 'wood', water: 'fire' };
+const GOD_GROUP = {
+  比肩: '比劫', 劫財: '比劫', 食神: '食傷', 傷官: '食傷',
+  偏財: '財星', 正財: '財星', 七殺: '官殺', 正官: '官殺',
+  偏印: '印星', 正印: '印星',
+};
+
+const GROUP_SS = {
+  taohua: { shen: 9, yin: 3, si: 6, hai: 0 },
+  yima: { shen: 2, yin: 8, si: 11, hai: 5 },
+  huagai: { shen: 4, yin: 10, si: 1, hai: 7 },
+  jiangxing: { shen: 0, yin: 6, si: 9, hai: 3 },
+};
+const TIANYI = [[1, 7], [0, 8], [11, 9], [11, 9], [1, 7], [0, 8], [1, 7], [2, 6], [3, 5], [3, 5]];
+const TAIJI = [[0, 6], [0, 6], [3, 9], [3, 9], [1, 4, 7, 10], [1, 4, 7, 10], [2, 11], [2, 11], [5, 8], [5, 8]];
+const TIANCHU = [5, 6, 5, 6, 8, 9, 11, 0, 2, 3];
+const GUOYIN = [10, 11, 1, 2, 1, 2, 4, 5, 7, 8];
+const WENCHANG = [5, 6, 8, 9, 8, 9, 11, 0, 2, 3];
+const YANGREN = [3, 2, 6, 5, 6, 5, 9, 8, 0, 11];
+const LUZHI = [2, 3, 5, 6, 5, 6, 8, 9, 11, 0];
+const HONGLUAN = [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4];
+const YUEDE = { yin: 2, shen: 8, hai: 0, si: 6 };
+
+const STEM_HE = [[0, 5], [1, 6], [2, 7], [3, 8], [4, 9]];
+const STEM_HE_ELEMENT = ['earth', 'metal', 'water', 'wood', 'fire'];
+const STEM_CHONG = [[0, 6], [1, 7], [2, 8], [3, 9]];
+const BRANCH_HE = [
+  { pair: [0, 1], element: 'earth' },
+  { pair: [2, 11], element: 'wood' },
+  { pair: [3, 10], element: 'fire' },
+  { pair: [4, 9], element: 'metal' },
+  { pair: [5, 8], element: 'water' },
+  { pair: [6, 7], element: 'earth' },
+];
+const BRANCH_CHONG = [[0, 6], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11]];
+const BRANCH_HAI = [[0, 7], [1, 6], [2, 5], [3, 4], [8, 11], [9, 10]];
+const BRANCH_PO = [[0, 9], [1, 4], [2, 11], [3, 6], [5, 8], [7, 10]];
+const BRANCH_SELF_XING = [4, 6, 9, 11];
+const BRANCH_SAN_XING = [[2, 5, 8], [1, 7, 10]];
+const BRANCH_SAN_HE = [
+  { branches: [8, 0, 4], element: 'water' },
+  { branches: [11, 3, 7], element: 'wood' },
+  { branches: [2, 6, 10], element: 'fire' },
+  { branches: [5, 9, 1], element: 'metal' },
+];
+const BRANCH_AN_HE = [
+  { pair: [2, 1], element: 'earth' },
+  { pair: [3, 8], element: 'metal' },
+  { pair: [6, 11], label: [11, 6], element: 'wood' },
+  { pair: [5, 9], element: 'water' },
+  { pair: [0, 5], element: 'fire' },
+];
+
+function triadGroup(branch) {
+  if ([8, 0, 4].includes(branch)) return 'shen';
+  if ([2, 6, 10].includes(branch)) return 'yin';
+  if ([5, 9, 1].includes(branch)) return 'si';
+  return 'hai';
+}
+
+export function elementOfStem(i) {
+  return STEM_ELEMENTS[mod(i, 10)];
+}
+export function elementOfBranch(i) {
+  return BRANCH_ELEMENTS[mod(i, 12)];
+}
+export function polarityOfStem(i) {
+  return i % 2 === 0 ? '陽' : '陰';
+}
+
+export function getTenGod(dayStem, otherStem) {
+  const de = STEM_ELEMENTS[dayStem];
+  const oe = STEM_ELEMENTS[otherStem];
+  const same = dayStem % 2 === otherStem % 2;
+  if (oe === de) return same ? '比肩' : '劫財';
+  if (oe === GENERATES[de]) return same ? '食神' : '傷官';
+  if (oe === CONTROLS[de]) return same ? '偏財' : '正財';
+  if (CONTROLS[oe] === de) return same ? '七殺' : '正官';
+  return same ? '偏印' : '正印';
+}
+
+export function getStage(dayStem, branch) {
+  const [start, dir] = STAGE_START[dayStem];
+  const offset = dir === 1 ? mod(branch - start, 12) : mod(start - branch, 12);
+  return STAGES[offset];
+}
+
+function sexagenaryIndex(stem, branch) {
+  for (let i = 0; i < 60; i++) {
+    if (i % 10 === stem && i % 12 === branch) return i;
+  }
+  return 0;
+}
+
+function monthStemFor(yearStem, branch) {
+  return mod(yearStem * 2 + 2 + mod(branch - 2, 12), 10);
+}
+
+function xunKong(index) {
+  const start = index - (index % 10);
+  return [mod(start + 10, 12), mod(start + 11, 12)];
+}
+
+function seasonMultiplier(element, monthElement) {
+  if (element === monthElement) return 1.35;
+  if (GENERATES[monthElement] === element) return 1.12;
+  if (GENERATES[element] === monthElement) return 0.92;
+  if (CONTROLS[element] === monthElement) return 0.75;
+  return 0.62;
+}
+
+function shenshaFor(pillar, ctx) {
+  const labels = [];
+  const { dayStem, yearStem, yearBranch, dayBranch, monthBranch } = ctx;
+  const b = pillar.branch;
+  const stems = yearStem === dayStem ? [dayStem] : [dayStem, yearStem];
+  const push = (label) => { if (!labels.includes(label)) labels.push(label); };
+
+  if (stems.some((s) => TIANYI[s].includes(b))) push('天乙貴人');
+  if (stems.some((s) => TAIJI[s].includes(b))) push('太極貴人');
+  if (stems.some((s) => TIANCHU[s] === b)) push('天廚貴人');
+  if (stems.some((s) => GUOYIN[s] === b)) push('國印貴人');
+  if (stems.some((s) => WENCHANG[s] === b)) push('文昌貴人');
+  if (stems.some((s) => YANGREN[s] === b)) push('羊刃');
+  if (stems.some((s) => LUZHI[s] === b)) push('祿神');
+
+  const groups = [yearBranch, dayBranch].map(triadGroup);
+  for (const [key, label] of [['taohua', '桃花'], ['yima', '驛馬'], ['huagai', '華蓋'], ['jiangxing', '將星']]) {
+    if (groups.some((g) => GROUP_SS[key][g] === b)) push(label);
+  }
+
+  if (HONGLUAN[yearBranch] === b) push('紅鸞');
+  if (mod(HONGLUAN[yearBranch] + 6, 12) === b) push('天喜');
+  if (YUEDE[triadGroup(monthBranch)] === pillar.stem) push('月德貴人');
+  if (mod(yearBranch - 2, 12) === b) push('吊客');
+
+  if (ctx.dayKong.includes(b)) push('空亡');
+  else if (ctx.yearKong.includes(b)) push('年空');
+
+  return labels;
+}
+
+function makePillar(idx, dayStem, ctx, isDay = false) {
+  const stem = idx % 10;
+  const branch = idx % 12;
+  const hidden = HIDDEN_STEMS[branch].map((s, i) => ({
+    stem: s,
+    char: STEMS[s],
+    element: STEM_ELEMENTS[s],
+    god: getTenGod(dayStem, s),
+    weight: HIDDEN_WEIGHTS[branch][i],
+  }));
+  return {
+    index: idx,
+    stem,
+    branch,
+    stemChar: STEMS[stem],
+    branchChar: BRANCHES[branch],
+    stemElement: STEM_ELEMENTS[stem],
+    branchElement: BRANCH_ELEMENTS[branch],
+    nayin: NAYIN[Math.floor(idx / 2)],
+    stage: getStage(dayStem, branch),
+    tenGod: isDay ? '日主' : getTenGod(dayStem, stem),
+    hidden,
+    shensha: ctx ? shenshaFor({ stem, branch }, ctx) : [],
+  };
+}
+
+const STEM_KIND_ORDER = { he: 0, chong: 1 };
+const BRANCH_KIND_ORDER = { he: 0, sanhe: 1, xing: 2, chong: 3, hai: 4, anhe: 5, po: 6 };
+
+function samePair(pair, a, b) {
+  return (pair[0] === a && pair[1] === b) || (pair[0] === b && pair[1] === a);
+}
+
+export function analyzeInteractions(items) {
+  const stemMap = new Map();
+  const branchMap = new Map();
+
+  const add = (map, text, kind, element, sources) => {
+    const existing = map.get(text);
+    if (existing) {
+      for (const source of sources) {
+        if (!existing.sources.includes(source)) existing.sources.push(source);
+      }
+      return;
+    }
+    map.set(text, { text, kind, element, sources: [...new Set(sources)] });
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i];
+      const b = items[j];
+      const sources = [a.source, b.source];
+
+      STEM_HE.forEach((pair, k) => {
+        if (samePair(pair, a.stem, b.stem)) {
+          add(stemMap, `${STEMS[pair[0]]}${STEMS[pair[1]]}合${ELEMENT_LABEL[STEM_HE_ELEMENT[k]]}`, 'he', STEM_HE_ELEMENT[k], sources);
+        }
+      });
+      const stemChong = STEM_CHONG.find((pair) => samePair(pair, a.stem, b.stem));
+      if (stemChong) {
+        add(stemMap, `${STEMS[stemChong[0]]}${STEMS[stemChong[1]]}相沖`, 'chong', null, sources);
+      }
+
+      const he = BRANCH_HE.find((x) => samePair(x.pair, a.branch, b.branch));
+      if (he) add(branchMap, `${BRANCHES[he.pair[0]]}${BRANCHES[he.pair[1]]}合化${ELEMENT_LABEL[he.element]}`, 'he', he.element, sources);
+
+      const chong = BRANCH_CHONG.find((pair) => samePair(pair, a.branch, b.branch));
+      if (chong) add(branchMap, `${BRANCHES[chong[0]]}${BRANCHES[chong[1]]}相沖`, 'chong', null, sources);
+
+      const hai = BRANCH_HAI.find((pair) => samePair(pair, a.branch, b.branch));
+      if (hai) add(branchMap, `${BRANCHES[hai[0]]}${BRANCHES[hai[1]]}相害`, 'hai', null, sources);
+
+      const po = BRANCH_PO.find((pair) => samePair(pair, a.branch, b.branch));
+      if (po) add(branchMap, `${BRANCHES[po[0]]}${BRANCHES[po[1]]}相破`, 'po', null, sources);
+
+      const anhe = BRANCH_AN_HE.find((x) => samePair(x.pair, a.branch, b.branch));
+      if (anhe) {
+        const label = anhe.label || anhe.pair;
+        add(branchMap, `${BRANCHES[label[0]]}${BRANCHES[label[1]]}暗合${ELEMENT_LABEL[anhe.element]}`, 'anhe', anhe.element, sources);
+      }
+
+      if (a.branch === b.branch && BRANCH_SELF_XING.includes(a.branch)) {
+        add(branchMap, `${BRANCHES[a.branch]}${BRANCHES[a.branch]}自刑`, 'xing', null, sources);
+      }
+    }
+  }
+
+  for (const group of BRANCH_SAN_HE) {
+    const matches = group.branches.map((br) => items.filter((it) => it.branch === br));
+    if (matches.every((list) => list.length)) {
+      const sources = [...new Set(matches.flat().map((it) => it.source))];
+      add(branchMap, `${group.branches.map((br) => BRANCHES[br]).join('')}三合${ELEMENT_LABEL[group.element]}局`, 'sanhe', group.element, sources);
+    }
+  }
+
+  for (const triple of BRANCH_SAN_XING) {
+    const present = triple.map((br) => items.some((it) => it.branch === br));
+    const sources = [...new Set(items.filter((it) => triple.includes(it.branch)).map((it) => it.source))];
+    if (present.every(Boolean)) {
+      add(branchMap, `${triple.map((br) => BRANCHES[br]).join('')}三刑`, 'xing', null, sources);
+    } else {
+      for (let x = 0; x < triple.length; x++) {
+        for (let y = x + 1; y < triple.length; y++) {
+          if (present[x] && present[y]) {
+            add(branchMap, `${BRANCHES[triple[x]]}${BRANCHES[triple[y]]}相刑`, 'xing', null, sources);
+          }
+        }
+      }
+    }
+  }
+
+  if (items.some((it) => it.branch === 0) && items.some((it) => it.branch === 3)) {
+    const sources = [...new Set(items.filter((it) => it.branch === 0 || it.branch === 3).map((it) => it.source))];
+    add(branchMap, '子卯相刑', 'xing', null, sources);
+  }
+
+  return {
+    stems: [...stemMap.values()].sort((a, b) => STEM_KIND_ORDER[a.kind] - STEM_KIND_ORDER[b.kind]),
+    branches: [...branchMap.values()].sort((a, b) => BRANCH_KIND_ORDER[a.kind] - BRANCH_KIND_ORDER[b.kind]),
+  };
+}
+
+function formatAge(decYears) {
+  const years = Math.floor(decYears + 1e-9);
+  const months = Math.floor((decYears - years) * 12 + 1e-9);
+  const days = Math.round((((decYears - years) * 12) - months) * 30);
+  if (days >= 30) return `${years}歲${months + 1}個月`;
+  return months ? `${years}歲${months}個月` : `${years}歲${days ? `${days}天` : ''}`;
+}
+
+export function cityLongitude(name) {
+  return CITIES.find((c) => c.name === name)?.longitude ?? 116.41;
+}
+
+export function computeChart(input) {
+  const warnings = [];
+  let solar;
+  if (input.calendar === 'lunar') {
+    solar = lunarToSolar(input.lunar.y, input.lunar.m, input.lunar.d, input.lunar.isLeap);
+  } else {
+    solar = { ...input.solar };
+  }
+
+  const timeUnknown = !input.time;
+  const h = timeUnknown ? 12 : input.time.h;
+  const min = timeUnknown ? 0 : input.time.min;
+  const clockTs = makeTs(solar.y, solar.m, solar.d, h, min);
+  let ts = clockTs;
+
+  let solarCorrection = null;
+  if (input.trueSolar && !timeUnknown) {
+    const lon = cityLongitude(input.city || '北京');
+    const doy = dayOfYear(clockTs);
+    const B = (2 * Math.PI * (doy - 81)) / 364;
+    const eot = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+    const delta = 4 * (lon - 120) + eot;
+    ts = ts + Math.round(delta * 60000);
+    solarCorrection = {
+      city: input.city || '北京',
+      longitude: lon,
+      minutes: delta,
+      rounded: Math.round(delta),
+      ts,
+      text: formatDate(ts),
+    };
+  }
+
+  const calcParts = tsParts(ts);
+  const clockParts = tsParts(clockTs);
+  const lunar = solarToLunar(solar.y, solar.m, solar.d);
+
+  // 年、月柱由節氣絕對時刻決定，真太陽時只作用於日、時柱
+  let yearForPillar = clockParts.y;
+  const lichun = lichunTs(clockParts.y);
+  if (lichun != null && clockTs < lichun) yearForPillar -= 1;
+  const yearIdx = mod(yearForPillar - 4, 60);
+  const yearStem = yearIdx % 10;
+  const yearBranch = yearIdx % 12;
+
+  // Month pillar (節 boundary)
+  const prevJie = findJieBefore(clockTs);
+  const nextJie = findJieAfter(clockTs);
+  if (!prevJie) throw new Error('出生時間超出節氣數據範圍');
+  const monthBranch = prevJie.branch;
+  const monthStem = monthStemFor(yearStem, monthBranch);
+  const monthIdx = sexagenaryIndex(monthStem, monthBranch);
+
+  // Day pillar (23:00 子時換日)
+  let dayTs = ts;
+  if (!timeUnknown && calcParts.h === 23 && input.lateZi !== false) {
+    dayTs += DAY_MS;
+  }
+  const dayIdx = mod(Math.floor(dayTs / DAY_MS) + 25567 + 10, 60);
+  const dayStem = dayIdx % 10;
+  const dayBranch = dayIdx % 12;
+
+  // Hour pillar
+  let hourBranch = null;
+  let hourIdx = null;
+  if (!timeUnknown) {
+    hourBranch = Math.floor(((calcParts.h + 1) % 24) / 2);
+    const hourStem = mod((dayStem % 5) * 2 + hourBranch, 10);
+    hourIdx = sexagenaryIndex(hourStem, hourBranch);
+  }
+
+  const dayKong = xunKong(dayIdx);
+  const yearKong = xunKong(yearIdx);
+  const ctx = { dayStem, yearStem, yearBranch, dayBranch, monthBranch, dayKong, yearKong };
+
+  const pillars = {
+    year: makePillar(yearIdx, dayStem, ctx),
+    month: makePillar(monthIdx, dayStem, ctx),
+    day: makePillar(dayIdx, dayStem, ctx, true),
+    hour: hourIdx != null ? makePillar(hourIdx, dayStem, ctx) : null,
+  };
+
+  // Five-element balance
+  const scores = Object.fromEntries(ELEMENTS.map((e) => [e, 0]));
+  const monthElement = BRANCH_ELEMENTS[monthBranch];
+  const stemList = [yearStem, monthStem, dayStem];
+  if (!timeUnknown) stemList.push(pillars.hour.stem);
+  for (const s of stemList) {
+    scores[STEM_ELEMENTS[s]] += 1 * seasonMultiplier(STEM_ELEMENTS[s], monthElement);
+  }
+  const branchEntries = [
+    { branch: yearBranch, weight: 1.0 },
+    { branch: monthBranch, weight: 1.6 },
+    { branch: dayBranch, weight: 1.2 },
+  ];
+  if (!timeUnknown) branchEntries.push({ branch: hourBranch, weight: 1.0 });
+  for (const { branch, weight } of branchEntries) {
+    HIDDEN_STEMS[branch].forEach((s, i) => {
+      const el = STEM_ELEMENTS[s];
+      scores[el] += weight * HIDDEN_WEIGHTS[branch][i] * seasonMultiplier(el, monthElement);
+    });
+  }
+  const totalScore = ELEMENTS.reduce((sum, e) => sum + scores[e], 0);
+  const elementRows = ELEMENTS.map((e) => ({
+    key: e,
+    label: ELEMENT_LABEL[e],
+    score: scores[e],
+    percent: (scores[e] / totalScore) * 100,
+  })).sort((a, b) => b.percent - a.percent);
+  const floors = elementRows.map((row) => Math.floor(row.percent));
+  let remainder = 100 - floors.reduce((a, b) => a + b, 0);
+  const fractions = elementRows
+    .map((row, i) => ({ i, frac: row.percent - Math.floor(row.percent) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < remainder; k++) floors[fractions[k % fractions.length].i] += 1;
+  elementRows.forEach((row, i) => { row.percent = floors[i]; });
+
+  // Ten-god distribution
+  const godCounts = {};
+  const godStems = [yearStem, monthStem];
+  if (!timeUnknown) godStems.push(pillars.hour.stem);
+  for (const s of godStems) {
+    const g = getTenGod(dayStem, s);
+    godCounts[g] = (godCounts[g] || 0) + 1;
+  }
+  for (const { branch, weight } of branchEntries) {
+    HIDDEN_STEMS[branch].forEach((s, i) => {
+      const g = getTenGod(dayStem, s);
+      godCounts[g] = (godCounts[g] || 0) + weight * HIDDEN_WEIGHTS[branch][i];
+    });
+  }
+  const godTotal = Object.values(godCounts).reduce((a, b) => a + b, 0) || 1;
+  const tenGods = Object.entries(godCounts)
+    .map(([name, value]) => ({ name, group: GOD_GROUP[name], value, percent: Math.round((value / godTotal) * 100) }))
+    .sort((a, b) => b.value - a.value);
+  const godPercentSum = tenGods.reduce((sum, row) => sum + row.percent, 0);
+  if (tenGods.length && godPercentSum !== 100) tenGods[0].percent += 100 - godPercentSum;
+
+  // Day master strength
+  const dayElement = STEM_ELEMENTS[dayStem];
+  const resourceElement = ELEMENTS.find((e) => GENERATES[e] === dayElement);
+  const support = scores[dayElement] + scores[resourceElement];
+  const supportRatio = support / totalScore;
+  const strength = supportRatio >= 0.55 ? '身強' : supportRatio <= 0.45 ? '身弱' : '中和';
+  const officerElement = ELEMENTS.find((e) => CONTROLS[e] === dayElement);
+  let favorable;
+  if (strength === '身強') {
+    favorable = [GENERATES[dayElement], CONTROLS[dayElement], officerElement];
+  } else if (strength === '身弱') {
+    favorable = [resourceElement, dayElement];
+  } else {
+    favorable = [resourceElement, GENERATES[dayElement]];
+  }
+  const favorableRows = [...new Set(favorable)].map((e) => ({
+    key: e,
+    label: ELEMENT_LABEL[e],
+    score: scores[e],
+    percent: elementRows.find((r) => r.key === e)?.percent ?? 0,
+  }));
+
+  // Luck cycles
+  const yearStemPolarity = yearStem % 2 === 0 ? '陽' : '陰';
+  const forward = (yearStemPolarity === '陽') === (input.gender === 'male');
+  const targetJie = forward ? nextJie : prevJie;
+  if (!targetJie) throw new Error('無法確定起運節氣');
+  const diffDays = Math.abs(targetJie.ts - clockTs) / DAY_MS;
+  const startAgeYears = diffDays / 3;
+  const totalMonths = diffDays * 4;
+  const startYears = Math.floor(totalMonths / 12);
+  const startMonths = Math.floor(totalMonths % 12);
+  const startDays = Math.round((((totalMonths % 12) % 1) * 30));
+  const jiaoyunTs = addMonths(clockTs, startAgeYears * 12);
+  const direction = forward ? 1 : -1;
+
+  const steps = [];
+  const nowParts = beijingNowParts();
+  for (let i = 0; i < 10; i++) {
+    const idx = mod(monthIdx + direction * (i + 1), 60);
+    const age = startAgeYears + i * 10;
+    const startTs = addMonths(clockTs, age * 12);
+    const startYear = tsParts(startTs).y;
+    const p = makePillar(idx, dayStem, ctx);
+    const years = [];
+    for (let j = 0; j < 10; j++) {
+      const y = startYear + j;
+      const yIdx = mod(y - 4, 60);
+      years.push({
+        year: y,
+        index: yIdx,
+        stem: yIdx % 10,
+        branch: yIdx % 12,
+        stemChar: STEMS[yIdx % 10],
+        branchChar: BRANCHES[yIdx % 12],
+        tenGod: getTenGod(dayStem, yIdx % 10),
+        stage: getStage(dayStem, yIdx % 12),
+        shensha: shenshaFor({ stem: yIdx % 10, branch: yIdx % 12 }, ctx),
+        isCurrent: y === nowParts.y,
+      });
+    }
+    steps.push({
+      ...p,
+      startAge: age,
+      ageLabel: formatAge(age),
+      startTs,
+      startYear,
+      years,
+    });
+  }
+
+  // Palaces
+  const monthOrdinal = mod(monthBranch - 2, 12) + 1;
+  let ming = null;
+  let shen = null;
+  if (!timeUnknown) {
+    const mingBranch = mod(1 + monthOrdinal - hourBranch, 12);
+    const shenBranch = mod(1 + monthOrdinal + hourBranch, 12);
+    ming = {
+      stem: monthStemFor(yearStem, mingBranch),
+      branch: mingBranch,
+    };
+    shen = {
+      stem: monthStemFor(yearStem, shenBranch),
+      branch: shenBranch,
+    };
+  }
+  const tai = { stem: mod(monthStem + 1, 10), branch: mod(monthBranch + 3, 12) };
+  for (const p of [ming, shen, tai]) {
+    if (!p) continue;
+    p.stemChar = STEMS[p.stem];
+    p.branchChar = BRANCHES[p.branch];
+    p.tenGod = getTenGod(dayStem, p.stem);
+    p.nayin = NAYIN[Math.floor(sexagenaryIndex(p.stem, p.branch) / 2)];
+    p.stage = getStage(dayStem, p.branch);
+  }
+
+  // Current Beijing year / month / day for the period stars
+  const nowTs = makeTs(nowParts.y, nowParts.m, nowParts.d, nowParts.h, nowParts.min);
+  const nowLichun = lichunTs(nowParts.y);
+  const nowYear = nowLichun != null && nowTs < nowLichun ? nowParts.y - 1 : nowParts.y;
+  const nowYearIdx = mod(nowYear - 4, 60);
+  const nowYearStem = nowYearIdx % 10;
+  const nowPrevJie = findJieBefore(nowTs);
+  const nowNextJie = findJieAfter(nowTs);
+  const nowMonthBranch = nowPrevJie ? nowPrevJie.branch : 11;
+  const nowMonthStem = monthStemFor(nowYearStem, nowMonthBranch);
+  const nowDayTs = nowParts.h === 23 && input.lateZi !== false ? nowTs + DAY_MS : nowTs;
+  const nowDayIdx = mod(Math.floor(nowDayTs / DAY_MS) + 25567 + 10, 60);
+  const nowDayStem = nowDayIdx % 10;
+  const nowDayBranch = nowDayIdx % 12;
+
+  let currentLuckIndex = -1;
+  for (let i = 0; i < steps.length; i++) {
+    const end = i + 1 < steps.length ? steps[i + 1].startTs : addMonths(steps[i].startTs, 120);
+    if (nowTs >= steps[i].startTs && nowTs < end) {
+      currentLuckIndex = i;
+      break;
+    }
+  }
+
+  const current = {
+    ts: nowTs,
+    dateText: `${nowParts.y}年${nowParts.m}月${nowParts.d}日`,
+    timeText: `${String(nowParts.h).padStart(2, '0')}:${String(nowParts.min).padStart(2, '0')}`,
+    luckIndex: currentLuckIndex,
+    year: {
+      year: nowYear,
+      index: nowYearIdx,
+      stem: nowYearStem,
+      branch: nowYearIdx % 12,
+      stemChar: STEMS[nowYearStem],
+      branchChar: BRANCHES[nowYearIdx % 12],
+      tenGod: getTenGod(dayStem, nowYearStem),
+      stage: getStage(dayStem, nowYearIdx % 12),
+      shensha: shenshaFor({ stem: nowYearStem, branch: nowYearIdx % 12 }, ctx),
+    },
+    month: {
+      stem: nowMonthStem,
+      branch: nowMonthBranch,
+      stemChar: STEMS[nowMonthStem],
+      branchChar: BRANCHES[nowMonthBranch],
+      tenGod: getTenGod(dayStem, nowMonthStem),
+      shensha: shenshaFor({ stem: nowMonthStem, branch: nowMonthBranch }, ctx),
+      jie: nowPrevJie ? nowPrevJie.name : '',
+      nextJie: nowNextJie ? nowNextJie.name : '',
+    },
+    day: {
+      stem: nowDayStem,
+      branch: nowDayBranch,
+      stemChar: STEMS[nowDayStem],
+      branchChar: BRANCHES[nowDayBranch],
+      tenGod: getTenGod(dayStem, nowDayStem),
+      shensha: shenshaFor({ stem: nowDayStem, branch: nowDayBranch }, ctx),
+    },
+  };
+
+  const prevJieDays = (clockTs - prevJie.ts) / DAY_MS;
+  const nextJieDays = (nextJie.ts - clockTs) / DAY_MS;
+  if (timeUnknown) warnings.push('時辰未知：時柱、命宮、身宮已略去，起運時間按正午估算。');
+
+  const elementStrongest = elementRows[0];
+  const elementWeakest = [...elementRows].reverse().find((r) => r.percent > 0) || elementRows[elementRows.length - 1];
+  const strengthText = strength === '身強'
+    ? '日主得令得助，氣勢偏旺，宜泄、宜剋。'
+    : strength === '身弱'
+      ? '日主受制，根氣偏弱，宜生扶、宜比助。'
+      : '日主強弱相宜，五行較為流通，取用須結合大運流年。';
+
+  const summary = {
+    dayMaster: `日主${STEMS[dayStem]}${ELEMENT_LABEL[dayElement]}，生於${BRANCHES[monthBranch]}月（${prevJie.name}後${prevJieDays.toFixed(1)}天），${strength}。`,
+    elements: `五行之中，${elementStrongest.label}${elementStrongest.percent}%最旺，${elementWeakest.label}${elementWeakest.percent}%偏弱。`,
+    strengthText,
+    favorableNote: strength === '中和'
+      ? '命局接近平衡，以下僅列流通之助，不作斷語。'
+      : `以五行平衡為參，喜${favorableRows.map((r) => r.label).join('、')}。`,
+  };
+
+  return {
+    input,
+    solarDate: { ...solar, h, min },
+    lunar,
+    lunarText: formatLunar(lunar.year, lunar.month, lunar.day, lunar.isLeap),
+    lunarYearText: lunarYearLabel(lunar.year),
+    calcDate: formatDate(ts),
+    solarCorrection,
+    timeUnknown,
+    animal: ANIMALS[yearBranch],
+    yearPillarYear: yearForPillar,
+    pillars,
+    pillarList: [pillars.year, pillars.month, pillars.day, pillars.hour].filter(Boolean),
+    dayMaster: {
+      stem: dayStem,
+      char: STEMS[dayStem],
+      branch: dayBranch,
+      branchChar: BRANCHES[dayBranch],
+      element: dayElement,
+      elementLabel: ELEMENT_LABEL[dayElement],
+      polarity: polarityOfStem(dayStem),
+      strength,
+      supportRatio,
+      score: support,
+      totalScore,
+      resourceElement,
+      favorable: favorableRows,
+    },
+    elements: elementRows,
+    tenGods,
+    shensha: {
+      year: pillars.year.shensha,
+      month: pillars.month.shensha,
+      day: pillars.day.shensha,
+      hour: pillars.hour ? pillars.hour.shensha : [],
+    },
+    kongwang: { day: dayKong.map((b) => BRANCHES[b]), year: yearKong.map((b) => BRANCHES[b]) },
+    monthInfo: {
+      branch: monthBranch,
+      branchChar: BRANCHES[monthBranch],
+      element: monthElement,
+      prevJie: { name: prevJie.name, days: prevJieDays },
+      nextJie: { name: nextJie.name, days: nextJieDays },
+      ordinal: monthOrdinal,
+    },
+    luck: {
+      forward,
+      direction,
+      directionLabel: `${yearStemPolarity}年${input.gender === 'male' ? '男' : '女'}${forward ? '順行' : '逆行'}`,
+      startAgeYears,
+      start: { years: startYears, months: startMonths, days: startDays },
+      startLabel: `${startYears}歲${startMonths}個月${startDays ? `${startDays}天` : ''}`,
+      jiaoyunTs,
+      jiaoyunText: formatDate(jiaoyunTs, false),
+      diffDays,
+      targetJie: targetJie.name,
+      steps,
+    },
+    current,
+    palaces: { ming, shen, tai },
+    summary,
+    warnings,
+    fourPillarsText: [pillars.year, pillars.month, pillars.day, pillars.hour]
+      .filter(Boolean)
+      .map((p) => `${p.stemChar}${p.branchChar}`)
+      .join(' '),
+  };
+}
+
+export function beijingNowParts() {
+  const ts = Date.now() + 8 * 3600000;
+  const d = new Date(ts);
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), min: d.getUTCMinutes() };
+}
+
+export function todayOverview() {
+  const now = beijingNowParts();
+  const ts = makeTs(now.y, now.m, now.d, now.h, now.min);
+  const lichun = lichunTs(now.y);
+  const yearForPillar = lichun != null && ts < lichun ? now.y - 1 : now.y;
+  const yIdx = mod(yearForPillar - 4, 60);
+  const dayIdx = mod(Math.floor(ts / DAY_MS) + 25567 + 10, 60);
+  const prevJie = findJieBefore(ts);
+  const nextJie = findJieAfter(ts);
+  return {
+    dateText: `${now.y}年${now.m}月${now.d}日`,
+    yearText: `${STEMS[yIdx % 10]}${BRANCHES[yIdx % 12]}年`,
+    dayText: `${STEMS[dayIdx % 10]}${BRANCHES[dayIdx % 12]}日`,
+    animal: ANIMALS[yIdx % 12],
+    prevJie,
+    nextJie,
+    lunar: solarToLunar(now.y, now.m, now.d),
+  };
+}
+
+export { lunarMonthDays, leapDays, leapMonth };
