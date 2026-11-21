@@ -2897,6 +2897,103 @@ input, select, textarea {
   }
 }
 
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(92vw, 520px);
+  padding: 12px 14px 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.update-banner[hidden] {
+  display: none;
+}
+
+.update-banner p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.update-banner p strong {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.update-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.update-later,
+.update-reload {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.update-later {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.update-later:hover {
+  color: var(--ink);
+}
+
+.update-reload {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper-2);
+}
+
+.update-reload:hover {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar);
+}
+
+body:has(.update-banner:not([hidden])) .toast {
+  bottom: 104px;
+}
+
+@media (max-width: 880px) {
+  .update-banner {
+    left: 12px;
+    right: 12px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    width: auto;
+    transform: none;
+  }
+
+  body:has(.update-banner:not([hidden])) .toast {
+    bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
+
 .noscript {
   position: fixed;
   inset: 0;
@@ -3496,6 +3593,7 @@ input, select, textarea {
   .result-bar,
   .disclaimer,
   .toast,
+  .update-banner,
   .chart-foot,
   .card-link,
   .today-btn,

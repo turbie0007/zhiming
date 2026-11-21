@@ -1,4 +1,4 @@
-const VERSION = 'zhiming-20261135';
+const VERSION = 'zhiming-20261136';
 const PRECACHE = [
   './',
   './index.html',
@@ -8,23 +8,22 @@ const PRECACHE = [
   './assets/icons/icon-512.png',
   './assets/icons/icon-1024.png',
   './assets/icons/apple-touch-icon.png',
-  './assets/css/style.css?v=20261135',
-  './assets/js/app.js?v=20261135',
-  './assets/js/astro.js?v=20261135',
-  './assets/js/bazi.js?v=20261135',
-  './assets/js/data.js?v=20261135',
-  './assets/js/glossary.js?v=20261135',
-  './assets/js/learn.js?v=20261135',
-  './assets/js/solar-terms.js?v=20261135',
+  './assets/css/style.css?v=20261136',
+  './assets/js/app.js?v=20261136',
+  './assets/js/astro.js?v=20261136',
+  './assets/js/bazi.js?v=20261136',
+  './assets/js/data.js?v=20261136',
+  './assets/js/glossary.js?v=20261136',
+  './assets/js/learn.js?v=20261136',
+  './assets/js/solar-terms.js?v=20261136',
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(VERSION)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(PRECACHE)));
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

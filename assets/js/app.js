@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261135';
+} from './data.js?v=20261136';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261135';
+} from './bazi.js?v=20261136';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261135';
-import { ARTICLES } from './learn.js?v=20261135';
-import { GLOSSARY } from './glossary.js?v=20261135';
+} from './astro.js?v=20261136';
+import { ARTICLES } from './learn.js?v=20261136';
+import { GLOSSARY } from './glossary.js?v=20261136';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -2033,8 +2033,59 @@ initTheme();
 state.records = loadRecords();
 route();
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+function setupServiceWorker() {
+  if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
+  const banner = document.getElementById('update-banner');
+  const reloadBtn = banner?.querySelector('[data-update-action="reload"]');
+  const laterBtn = banner?.querySelector('[data-update-action="later"]');
+  let waiting = null;
+  let reloading = false;
+  let lastCheck = Date.now();
+
+  const prompt = (worker) => {
+    waiting = worker;
+    if (banner) banner.hidden = false;
+  };
+
+  reloadBtn?.addEventListener('click', () => {
+    if (!waiting) {
+      location.reload();
+      return;
+    }
+    reloading = true;
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+  });
+
+  laterBtn?.addEventListener('click', () => {
+    if (banner) banner.hidden = true;
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) location.reload();
+  });
+
+  window.addEventListener('load', async () => {
+    let registration;
+    try {
+      registration = await navigator.serviceWorker.register('sw.js');
+    } catch {
+      return;
+    }
+    if (registration.waiting) prompt(registration.waiting);
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) prompt(worker);
+      });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastCheck < 30 * 60 * 1000) return;
+      lastCheck = Date.now();
+      registration.update().catch(() => {});
+    });
   });
 }
+
+setupServiceWorker();
