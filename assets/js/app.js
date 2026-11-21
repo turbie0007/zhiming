@@ -1,15 +1,15 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261124';
+} from './data.js?v=20261125';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions,
-} from './bazi.js?v=20261124';
+} from './bazi.js?v=20261125';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261124';
-import { ARTICLES } from './learn.js?v=20261124';
+} from './astro.js?v=20261125';
+import { ARTICLES } from './learn.js?v=20261125';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -1794,3 +1794,9 @@ window.addEventListener('hashchange', () => route({ focus: true }));
 initTheme();
 state.records = loadRecords();
 route();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}

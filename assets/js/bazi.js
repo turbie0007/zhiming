@@ -2,12 +2,12 @@ import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
   JIE_MAP, CITIES,
-} from './data.js?v=20261124';
+} from './data.js?v=20261125';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
-} from './astro.js?v=20261124';
+} from './astro.js?v=20261125';
 
 const DAY_MS = 86400000;
 const GENERATES = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
