@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261136';
+} from './data.js?v=20261137';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261136';
+} from './bazi.js?v=20261137';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261136';
-import { ARTICLES } from './learn.js?v=20261136';
-import { GLOSSARY } from './glossary.js?v=20261136';
+} from './astro.js?v=20261137';
+import { ARTICLES } from './learn.js?v=20261137';
+import { GLOSSARY } from './glossary.js?v=20261137';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -1785,7 +1785,7 @@ function renderAbout() {
       <section class="about-disclaimer reveal">
         <h3>免責聲明</h3>
         <p>本站內容用於傳統文化研習與信息整理，不構成醫療、法律、投資、婚戀或任何現實決策建議。請勿依據排盤結果作出重大決定。</p>
-        <p class="about-tech">純靜態頁面 · 無追蹤 · 本地計算</p>
+        <p class="about-tech">純靜態頁面 · 無追蹤 · 本地計算 · <a href="tests.html">排盤回歸測試</a></p>
       </section>
     </div>
   `;
