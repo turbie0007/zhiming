@@ -1,15 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261132';
+} from './data.js?v=20261134';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261132';
+} from './bazi.js?v=20261134';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel,
-} from './astro.js?v=20261132';
-import { ARTICLES } from './learn.js?v=20261132';
+} from './astro.js?v=20261134';
+import { ARTICLES } from './learn.js?v=20261134';
+import { GLOSSARY } from './glossary.js?v=20261134';
 
 const STORAGE = {
   records: 'zhiming.records.v2',
@@ -87,6 +88,14 @@ function esc(value) {
   }[ch]));
 }
 
+function termTag(term, className = '') {
+  const known = Boolean(GLOSSARY[term]);
+  const cls = `${className}${known ? ' term-tag' : ''}`.trim();
+  return known
+    ? `<button class="${cls}" type="button" data-term="${esc(term)}" aria-haspopup="dialog">${esc(term)}</button>`
+    : `<span class="${cls}">${esc(term)}</span>`;
+}
+
 function elClass(element) {
   return `el-${element}`;
 }
@@ -123,6 +132,50 @@ function toast(message) {
   el.classList.add('is-visible');
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => el.classList.remove('is-visible'), 2600);
+}
+
+// ---- Term glossary ----
+
+let termAnchor = null;
+
+function placeTermPop(anchor, pop) {
+  if (window.innerWidth <= 640) return;
+  const rect = anchor.getBoundingClientRect();
+  const width = pop.offsetWidth;
+  const height = pop.offsetHeight;
+  const left = Math.min(Math.max(12, rect.left + rect.width / 2 - width / 2), window.innerWidth - width - 12);
+  let top = rect.bottom + 8;
+  if (top + height > window.innerHeight - 12) top = Math.max(12, rect.top - height - 8);
+  pop.style.left = `${Math.round(left)}px`;
+  pop.style.top = `${Math.round(top)}px`;
+}
+
+function openTerm(term, anchor) {
+  const info = GLOSSARY[term];
+  const pop = document.getElementById('term-pop');
+  if (!info || !pop) return;
+  const article = info.article ? ARTICLES.find((a) => a.id === info.article) : null;
+  pop.innerHTML = `
+    <button class="term-pop-close" type="button" aria-label="關閉">${icon('x', 14)}</button>
+    <h3 id="term-pop-title">${esc(term)}</h3>
+    <p>${esc(info.text)}</p>
+    ${article ? `<a class="term-more" href="#article-${article.id}">學堂：${esc(article.title)} ${icon('arrowRight', 12)}</a>` : ''}
+  `;
+  pop.hidden = false;
+  termAnchor = anchor;
+  placeTermPop(anchor, pop);
+  pop.focus({ preventScroll: true });
+}
+
+function closeTerm(restoreFocus = false) {
+  const pop = document.getElementById('term-pop');
+  if (!pop || pop.hidden) return;
+  pop.hidden = true;
+  pop.innerHTML = '';
+  pop.style.left = '';
+  pop.style.top = '';
+  if (restoreFocus) termAnchor?.focus({ preventScroll: true });
+  termAnchor = null;
 }
 
 async function copyText(text) {
@@ -266,6 +319,7 @@ function navigate(hash) {
 function route(options = {}) {
   const hash = location.hash || '#/';
   const path = hash.slice(1) || '/';
+  closeTerm();
   updateNav(path);
   window.scrollTo({ top: 0 });
   if (path === '/' || path === '') {
@@ -947,7 +1001,7 @@ function renderChart(chart) {
             <div class="god-bars">
               ${chart.tenGods.map((g) => `
                 <div class="god-row">
-                  <span class="god-title">${g.name}<i>${g.group}</i></span>
+                  <span class="god-title">${termTag(g.name)}<i>${g.group}</i></span>
                   <div class="bar"><span class="fill god" style="width:${g.percent}%"></span></div>
                   <b>${g.percent}%</b>
                 </div>`).join('')}
@@ -1012,7 +1066,7 @@ function renderPillarChart(chart) {
 
   rows.push(`<div class="pc-row row-god">
     <div class="pc-label">十神</div>
-    ${cols.map((c) => cell(pillar(c.key) ? `<span class="tg ${pillar(c.key).tenGod === '日主' ? 'is-self' : ''}">${pillar(c.key).tenGod}</span>` : '<span class="muted">—</span>', '', c.key)).join('')}
+    ${cols.map((c) => cell(pillar(c.key) ? termTag(pillar(c.key).tenGod, `tg${pillar(c.key).tenGod === '日主' ? ' is-self' : ''}`) : '<span class="muted">—</span>', '', c.key)).join('')}
   </div>`);
 
   rows.push(`<div class="pc-row row-stem">
@@ -1046,7 +1100,7 @@ function renderPillarChart(chart) {
     <div class="pc-label">神煞</div>
     ${cols.map((c) => cell(pillar(c.key)
       ? (pillar(c.key).shensha.length
-        ? `<div class="ss-list">${pillar(c.key).shensha.map((s) => `<span class="ss-tag ${s === '空亡' || s === '年空' ? 'is-kong' : ''}">${s}</span>`).join('')}</div>`
+        ? `<div class="ss-list">${pillar(c.key).shensha.map((s) => termTag(s, `ss-tag${s === '空亡' || s === '年空' ? ' is-kong' : ''}`)).join('')}</div>`
         : '<span class="muted">—</span>')
       : '<span class="muted">—</span>', '', c.key)).join('')}
   </div>`);
@@ -1219,7 +1273,7 @@ function renderWatch(chart, step) {
     }).join('');
   };
   const stars = (list) => (list.length
-    ? list.map((s) => `<span class="ss-tag${s === '空亡' || s === '年空' ? ' is-kong' : ''}">${s}</span>`).join('')
+    ? list.map((s) => termTag(s, `ss-tag${s === '空亡' || s === '年空' ? ' is-kong' : ''}`)).join('')
     : '<span class="muted">—</span>');
   const row = (label, sub, content, isStars = false) => `
     <div class="watch-row" role="row">
@@ -1628,7 +1682,7 @@ function renderLearn() {
       <header class="page-head reveal">
         <p class="eyebrow"><span class="eyebrow-line"></span>學堂</p>
         <h1>先把語言學會<br>再談命理</h1>
-        <p class="page-lede">四柱不是四個字，而是一套關於時間、節氣與關係的記號系統。以下六篇短文，按排盤順序解釋你會遇到的術語。</p>
+        <p class="page-lede">四柱不是四個字，而是一套關於時間、節氣與關係的記號系統。以下短文，按排盤順序解釋你會遇到的術語。</p>
       </header>
       <div class="learn-layout">
         <aside class="learn-toc reveal">
@@ -1870,6 +1924,21 @@ document.addEventListener('click', (event) => {
     openArticle(tocLink.getAttribute('href').slice(1));
     return;
   }
+  const termEl = event.target.closest('[data-term]');
+  if (termEl) {
+    event.preventDefault();
+    openTerm(termEl.dataset.term, termEl);
+    return;
+  }
+  const popEl = document.getElementById('term-pop');
+  if (popEl && !popEl.hidden) {
+    if (event.target.closest('.term-pop-close')) {
+      event.preventDefault();
+      closeTerm(true);
+      return;
+    }
+    if (!event.target.closest('#term-pop')) closeTerm();
+  }
   const actionEl = event.target.closest('[data-action]');
   if (actionEl) {
     if (actionEl.dataset.action === 'delete-record') event.stopPropagation();
@@ -1915,6 +1984,16 @@ document.addEventListener('click', (event) => {
 });
 
 window.addEventListener('hashchange', () => route({ focus: true }));
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !document.getElementById('term-pop')?.hidden) {
+    event.preventDefault();
+    closeTerm(true);
+  }
+});
+
+window.addEventListener('scroll', () => closeTerm(), { passive: true });
+window.addEventListener('resize', () => closeTerm());
 
 // ---- Boot ----
 

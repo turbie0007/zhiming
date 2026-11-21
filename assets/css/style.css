@@ -1293,6 +1293,31 @@ input, select, textarea {
   letter-spacing: 0.02em;
 }
 
+.term-tag {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted var(--line-strong);
+  text-underline-offset: 2px;
+}
+
+.term-tag:hover {
+  color: var(--cinnabar);
+}
+
+.term-tag:focus-visible {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .tg {
   font-size: 11.5px;
   letter-spacing: 0.04em;
@@ -1363,6 +1388,14 @@ input, select, textarea {
   border: 1px dashed var(--line-strong);
   background: transparent;
   color: var(--ink-3);
+}
+
+.ss-tag.term-tag {
+  text-decoration: none;
+}
+
+.ss-tag.is-kong.term-tag {
+  border: 1px dashed var(--line-strong);
 }
 
 .chart-card.is-compact .row-nayin,
@@ -2791,6 +2824,79 @@ input, select, textarea {
   transform: translate(-50%, 0);
 }
 
+.term-pop {
+  position: fixed;
+  z-index: 250;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.term-pop:focus {
+  outline: none;
+}
+
+.term-pop h3 {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.term-pop p {
+  margin: 8px 0 10px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--ink-2);
+}
+
+.term-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--cinnabar);
+  text-decoration: none;
+}
+
+.term-more:hover {
+  text-decoration: underline;
+}
+
+.term-pop-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.term-pop-close:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .term-pop {
+    left: 12px !important;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    top: auto !important;
+    width: auto;
+  }
+}
+
 .noscript {
   position: fixed;
   inset: 0;
@@ -3484,8 +3590,13 @@ input, select, textarea {
     break-inside: avoid;
   }
 
-  .period-picker {
-    display: none;
+  .period-picker,
+  .term-pop {
+    display: none !important;
+  }
+
+  .term-tag {
+    text-decoration: none;
   }
 
   .chart-layout {
