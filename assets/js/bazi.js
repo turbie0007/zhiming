@@ -1,14 +1,14 @@
 import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
-  JIE_MAP, CITIES,
-} from './data.js?v=20261143';
+  JIE_MAP, CITIES, CLIMATE,
+} from './data.js?v=20261144';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261143';
+} from './astro.js?v=20261144';
 
 const DAY_MS = 86400000;
 
@@ -127,6 +127,249 @@ function seasonMultiplier(element, monthElement) {
   if (GENERATES[element] === monthElement) return 0.92;
   if (CONTROLS[element] === monthElement) return 0.75;
   return 0.62;
+}
+
+const HIDDEN_LABEL = ['本氣', '中氣', '餘氣'];
+
+function confidenceText(value) {
+  return value >= 0.8 ? '高' : value >= 0.55 ? '中' : '低';
+}
+
+function patternFor(god, dayStem, monthBranch) {
+  if (god === '比肩' || god === '劫財') {
+    const stage = getStage(dayStem, monthBranch);
+    if (stage === '臨官') return { name: '建祿格', god: '比肩', group: '比劫' };
+    if (stage === '帝旺' && dayStem % 2 === 0) return { name: '羊刃格', god: '劫財', group: '比劫' };
+    return { name: '比劫格', god, group: '比劫' };
+  }
+  return { name: `${god}格`, god, group: GOD_GROUP[god] };
+}
+
+function specialPattern(dayStem, monthBranch) {
+  const stage = getStage(dayStem, monthBranch);
+  if (stage === '臨官') {
+    return {
+      name: '建祿格', god: '比肩', group: '比劫', source: '月令',
+      reason: `月支${BRANCHES[monthBranch]}為日主臨官之地，祿神當令，取建祿格。`,
+      confidence: 0.9, confidenceText: '高',
+    };
+  }
+  if (stage === '帝旺' && dayStem % 2 === 0) {
+    return {
+      name: '羊刃格', god: '劫財', group: '比劫', source: '月令',
+      reason: `月支${BRANCHES[monthBranch]}為日主帝旺之地，羊刃當令，取羊刃格。`,
+      confidence: 0.88, confidenceText: '高',
+    };
+  }
+  return null;
+}
+
+function analyzeStructure({
+  dayStem, monthBranch, monthStem, yearStem, hourStem,
+  monthHidden, strength, supportRatio, dayElement, resourceElement, elementRows, timeUnknown,
+}) {
+  const branchChar = BRANCHES[monthBranch];
+  const visible = [
+    { stem: yearStem, label: '年干', weight: 0.05 },
+    { stem: monthStem, label: '月干', weight: 0.08 },
+  ];
+  if (hourStem != null) visible.push({ stem: hourStem, label: '時干', weight: 0.04 });
+
+  const regular = [];
+  monthHidden.forEach((hidden, i) => {
+    const positions = visible.filter((row) => row.stem === hidden.stem);
+    if (!positions.length) return;
+    const pattern = patternFor(hidden.god, dayStem, monthBranch);
+    const base = [0.82, 0.62, 0.45][i] ?? 0.42;
+    const bonus = Math.max(...positions.map((row) => row.weight)) + (positions.length > 1 ? 0.02 : 0);
+    const confidence = Math.min(0.92, base + bonus);
+    regular.push({
+      ...pattern,
+      source: '透干',
+      hiddenIndex: i,
+      hiddenChar: hidden.char,
+      hiddenLabel: HIDDEN_LABEL[i] || '藏干',
+      positions: positions.map((row) => row.label),
+      confidence,
+      confidenceText: confidenceText(confidence),
+      reason: `月支${branchChar}藏${hidden.char}（${hidden.god}），透於${positions.map((row) => row.label).join('、')}，取${pattern.name}。`,
+    });
+  });
+  regular.sort((a, b) => a.hiddenIndex - b.hiddenIndex || b.confidence - a.confidence);
+
+  const special = specialPattern(dayStem, monthBranch);
+  let candidates;
+  if (special) {
+    candidates = [special, ...regular.filter((row) => row.name !== special.name)];
+  } else if (regular.length) {
+    candidates = regular;
+  } else {
+    const hidden = monthHidden[0];
+    const pattern = patternFor(hidden.god, dayStem, monthBranch);
+    candidates = [{
+      ...pattern,
+      source: '本氣',
+      hiddenIndex: 0,
+      hiddenChar: hidden.char,
+      hiddenLabel: '本氣',
+      positions: [],
+      confidence: 0.55,
+      confidenceText: '中',
+      reason: `月支${branchChar}本氣為${hidden.char}（${hidden.god}），未見於年、月、時干，暫以本氣取格。`,
+    }];
+  }
+
+  const unique = new Map();
+  for (const candidate of candidates) {
+    const existing = unique.get(candidate.name);
+    if (!existing || candidate.confidence > existing.confidence) unique.set(candidate.name, candidate);
+  }
+  const patternCandidates = [...unique.values()].map((row, i) => ({
+    ...row, role: i === 0 ? '主格' : '兼格',
+  }));
+  const primary = patternCandidates[0];
+
+  const outputElement = GENERATES[dayElement];
+  const wealthElement = CONTROLS[dayElement];
+  const officerElement = ELEMENTS.find((element) => CONTROLS[element] === dayElement);
+  const rows = new Map(elementRows.map((row) => [row.key, row]));
+  const percentOf = (element) => rows.get(element)?.percent ?? 0;
+
+  const useful = new Map();
+  const addUseful = (element, method, reason, base) => {
+    if (!element) return;
+    const percent = percentOf(element);
+    const presence = percent >= 12 ? 0.03 : percent >= 5 ? 0 : -0.12;
+    const confidence = Math.min(0.92, Math.max(0.35, base + presence));
+    const existing = useful.get(element);
+    if (existing) {
+      if (!existing.methods.includes(method)) existing.methods.push(method);
+      if (reason && !existing.reasons.includes(reason)) existing.reasons.push(reason);
+      if (confidence > existing.confidence) {
+        existing.confidence = confidence;
+        existing.confidenceText = confidenceText(confidence);
+        existing.reason = reason;
+      }
+      return;
+    }
+    useful.set(element, {
+      element,
+      label: ELEMENT_LABEL[element],
+      percent,
+      methods: [method],
+      reasons: reason ? [reason] : [],
+      reason: reason || '',
+      confidence,
+      confidenceText: confidenceText(confidence),
+    });
+  };
+
+  const bias = supportRatio - 0.5;
+  const weakish = strength === '身弱' || (strength === '中和' && bias < -0.015);
+  const strongish = strength === '身強' || (strength === '中和' && bias > 0.015);
+  const supportPct = Math.round(supportRatio * 100);
+
+  if (weakish) {
+    addUseful(resourceElement, '扶抑', `日主同黨 ${supportPct}%，以${ELEMENT_LABEL[resourceElement]}印星生扶。`, 0.8);
+    addUseful(dayElement, '扶抑', '同類比劫幫身，分擔財官壓力。', 0.68);
+  } else if (strongish) {
+    addUseful(outputElement, '扶抑', `日主偏旺，以${ELEMENT_LABEL[outputElement]}食傷泄秀。`, 0.78);
+    addUseful(wealthElement, '扶抑', `以${ELEMENT_LABEL[wealthElement]}財星耗身，承接食傷之生。`, 0.72);
+    addUseful(officerElement, '扶抑', `以${ELEMENT_LABEL[officerElement]}官殺制身，收斂旺氣。`, 0.68);
+  } else {
+    addUseful(resourceElement, '扶抑', '強弱接近，以印星保持生機。', 0.66);
+    addUseful(outputElement, '扶抑', '強弱接近，以食傷保持流通。', 0.66);
+  }
+
+  if (strongish) {
+    if (primary.group === '官殺') addUseful(wealthElement, '格局配合', '財星生官，令官殺有源。', 0.76);
+    if (primary.group === '財星') addUseful(outputElement, '格局配合', '食傷生財，令財有源。', 0.76);
+    if (primary.group === '印星') addUseful(wealthElement, '格局配合', '財星制印，避免印旺礙泄。', 0.74);
+    if (primary.group === '食傷') addUseful(wealthElement, '格局配合', '食傷生財，才華落於實用。', 0.75);
+    if (primary.group === '比劫') addUseful(officerElement, '格局配合', '官殺制比劫，收斂過旺之勢。', 0.74);
+  } else if (weakish) {
+    if (primary.group === '官殺') addUseful(resourceElement, '格局配合', '印星化殺生身，先解壓力。', 0.8);
+    if (primary.group === '財星') addUseful(dayElement, '格局配合', '比劫幫身，方能任財。', 0.72);
+    if (primary.group === '食傷') addUseful(resourceElement, '格局配合', '印星制食傷，守住日主。', 0.78);
+    if (primary.group === '印星') addUseful(dayElement, '格局配合', '比劫幫身，承接印蔭。', 0.72);
+    if (primary.group === '比劫') addUseful(resourceElement, '格局配合', '印星生身，補足根氣。', 0.76);
+  }
+
+  const [first, second] = [...elementRows].sort((a, b) => b.score - a.score);
+  if (first && second && first.percent >= 18 && second.percent >= 18) {
+    let mediator = null;
+    let opposing = null;
+    if (CONTROLS[first.key] === second.key) {
+      mediator = GENERATES[first.key];
+      opposing = `${first.label}${first.percent}%與${second.label}${second.percent}%相剋`;
+    } else if (CONTROLS[second.key] === first.key) {
+      mediator = GENERATES[second.key];
+      opposing = `${second.label}${second.percent}%與${first.label}${first.percent}%相剋`;
+    }
+    if (mediator) addUseful(mediator, '通關', `${opposing}，取${ELEMENT_LABEL[mediator]}通關。`, 0.76);
+  }
+
+  const climate = CLIMATE[monthBranch];
+  if (climate) {
+    climate.keys.forEach((element, i) => {
+      addUseful(element, '調候', `生於${branchChar}月（${climate.label}），以${ELEMENT_LABEL[element]}調候。`, i === 0 ? 0.7 : 0.64);
+    });
+  }
+
+  const strongest = elementRows[0];
+  const controller = strongest ? ELEMENTS.find((element) => CONTROLS[element] === strongest.key) : null;
+  if (strongest && controller && strongest.percent >= 40 && percentOf(controller) < 10) {
+    addUseful(controller, '病藥', `${strongest.label}${strongest.percent}%過旺為病，取${ELEMENT_LABEL[controller]}制之。`, 0.72);
+  }
+
+  const usefulCandidates = [...useful.values()].sort((a, b) => b.confidence - a.confidence);
+  const usefulPrimary = usefulCandidates[0] || {
+    element: resourceElement,
+    label: ELEMENT_LABEL[resourceElement],
+    percent: percentOf(resourceElement),
+    methods: ['扶抑'],
+    reasons: ['以五行平衡為參。'],
+    reason: '以五行平衡為參。',
+    confidence: 0.5,
+    confidenceText: '中',
+  };
+
+  const avoid = new Map();
+  const addAvoid = (element, reason) => {
+    if (!element || useful.has(element) || avoid.has(element)) return;
+    avoid.set(element, {
+      element,
+      label: ELEMENT_LABEL[element],
+      percent: percentOf(element),
+      reason,
+    });
+  };
+  if (weakish) {
+    addAvoid(outputElement, '日主偏弱，不宜再受泄耗。');
+    addAvoid(wealthElement, '日主偏弱，不宜再受泄耗。');
+    addAvoid(officerElement, '日主偏弱，不宜再受泄耗。');
+  } else if (strongish) {
+    addAvoid(resourceElement, '日主已旺，再逢生扶易過。');
+    addAvoid(dayElement, '日主已旺，再逢生扶易過。');
+  }
+
+  const notes = [
+    '格局以月令為主，先看透干，再取本氣；未計從格、化氣格等特殊格局。',
+    '用神以扶抑、通關、調候、病藥加權，屬教學性簡化模型。',
+  ];
+  if (timeUnknown) notes.push('時柱未知，透干與用神判斷可能受影響。');
+
+  return {
+    primary,
+    candidates: patternCandidates.slice(0, 4),
+    useful: {
+      primary: usefulPrimary,
+      candidates: usefulCandidates.slice(0, 4),
+      avoid: [...avoid.values()].slice(0, 3),
+    },
+    notes,
+    summary: `取${primary.name}；用神以${usefulPrimary.label}為主（${usefulPrimary.methods.join('、')}）。`,
+  };
 }
 
 function shenshaFor(pillar, ctx) {
@@ -733,6 +976,21 @@ export function computeChart(input) {
       : `以五行平衡為參，喜${favorableRows.map((r) => r.label).join('、')}。`,
   };
 
+  const structure = analyzeStructure({
+    dayStem,
+    monthBranch,
+    monthStem,
+    yearStem,
+    hourStem: pillars.hour ? pillars.hour.stem : null,
+    monthHidden: pillars.month.hidden,
+    strength,
+    supportRatio,
+    dayElement,
+    resourceElement,
+    elementRows,
+    timeUnknown,
+  });
+
   return {
     input,
     solarDate: { ...solar, h, min },
@@ -794,6 +1052,7 @@ export function computeChart(input) {
     current,
     palaces: { ming, shen, tai },
     summary,
+    structure,
     warnings,
     fourPillarsText: [pillars.year, pillars.month, pillars.day, pillars.hour]
       .filter(Boolean)

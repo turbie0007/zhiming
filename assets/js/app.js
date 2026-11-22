@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
-  LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261143';
+  LUNAR_DAYS, GENDER_LABEL, CLIMATE,
+} from './data.js?v=20261144';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261143';
+} from './bazi.js?v=20261144';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
-} from './astro.js?v=20261143';
-import { ARTICLES } from './learn.js?v=20261143';
-import { GLOSSARY } from './glossary.js?v=20261143';
+} from './astro.js?v=20261144';
+import { ARTICLES } from './learn.js?v=20261144';
+import { GLOSSARY } from './glossary.js?v=20261144';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -1010,21 +1010,6 @@ function renderError(message, heading = '鏈接未能起盤', pageTitle = '鏈�
   `;
 }
 
-const CLIMATE = {
-  0: { label: '仲冬', text: '水冷木寒，調候重在暖局；全局過寒時，火氣最能提神。', keys: ['fire'] },
-  1: { label: '季冬', text: '濕寒未退，土凍水冷，調候同樣以火暖局為先。', keys: ['fire'] },
-  2: { label: '初春', text: '餘寒未盡，木氣初生，宜火暖木、金修剪。', keys: ['fire', 'metal'] },
-  3: { label: '仲春', text: '木旺而濕，調候取火泄秀、金修剪，使木不偏枯。', keys: ['fire', 'metal'] },
-  4: { label: '季春', text: '土濕木盛，宜火暖土、木疏土，令氣機流通。', keys: ['fire', 'wood'] },
-  5: { label: '初夏', text: '火氣漸旺，燥熱將起，以水潤局為調候主軸。', keys: ['water'] },
-  6: { label: '仲夏', text: '炎熱當令，最忌燥烈，調候重在水潤。', keys: ['water'] },
-  7: { label: '季夏', text: '燥土當權，水氣不足，仍以水潤土為先。', keys: ['water'] },
-  8: { label: '初秋', text: '金旺氣肅，宜火煉金、水潤燥，使剛而不脆。', keys: ['fire', 'water'] },
-  9: { label: '仲秋', text: '金旺而燥，調候取火煉金、水洗金，剛柔相濟。', keys: ['fire', 'water'] },
-  10: { label: '季秋', text: '燥土傷金，宜水潤燥、木疏土，避免過乾。', keys: ['water', 'wood'] },
-  11: { label: '初冬', text: '水寒金冷，調候以火暖局，使生機不絕。', keys: ['fire'] },
-};
-
 function climateAdvice(chart) {
   const info = CLIMATE[chart.monthInfo.branch] || CLIMATE[0];
   const favorable = chart.dayMaster.favorable.map((f) => f.key);
@@ -1041,6 +1026,7 @@ function renderChart(chart) {
   const solarText = solarDateText(chart);
   const gender = GENDER_LABEL[chart.input.gender];
   const dm = chart.dayMaster;
+  const structure = chart.structure;
   const selected = chart.luck.steps[state.selectedLuck] || chart.luck.steps[0];
   const climate = climateAdvice(chart);
   const printWatch = watchData(chart, selected);
@@ -1078,7 +1064,7 @@ function renderChart(chart) {
         <div class="identity-facts">
           <div><span>生肖</span><strong>${chart.animal}</strong></div>
           <div><span>日主</span><strong class="${elClass(dm.element)}">${dm.char}${dm.elementLabel}</strong></div>
-          <div><span>格局</span><strong>${dm.strength}</strong></div>
+          <div><span>格局</span><strong>${structure.primary.name}</strong></div>
           <div><span>四柱</span><strong class="identity-pillars">${chart.fourPillarsText}</strong></div>
         </div>
       </section>
@@ -1102,6 +1088,62 @@ function renderChart(chart) {
             </div>
             ${renderPillarChart(chart)}
             <p class="chart-foot">年柱為根基與少年，月柱為環境與青年，日柱為自身與伴侶，時柱為子女與歸途。以日干為「我」，其餘干支的關係即十神。</p>
+          </section>
+
+          <section class="card structure-card reveal" style="--delay: 40ms" aria-labelledby="structure-title">
+            <div class="card-head">
+              <div>
+                <p class="card-kicker">取格</p>
+                <h2 id="structure-title">格局與用神</h2>
+              </div>
+              <span class="mini-tag">${structure.primary.name}</span>
+            </div>
+            <div class="structure-grid">
+              <div class="structure-block">
+                <p class="structure-eyebrow">格局</p>
+                <div class="structure-head">
+                  <strong class="structure-name">${structure.primary.name}</strong>
+                  <span class="structure-confidence">取格把握 ${structure.primary.confidenceText}</span>
+                </div>
+                <p class="structure-reason">${structure.primary.reason}</p>
+                ${structure.candidates.length > 1 ? `
+                  <div class="structure-candidates">
+                    <span class="favor-label">兼格</span>
+                    ${structure.candidates.slice(1).map((candidate) => `
+                      <span class="structure-chip">${candidate.name}<i>${candidate.confidenceText}</i></span>
+                    `).join('')}
+                  </div>` : ''}
+              </div>
+              <div class="structure-block">
+                <p class="structure-eyebrow">用神</p>
+                <div class="useful-head">
+                  <span class="useful-element ${elClass(structure.useful.primary.element)}">${structure.useful.primary.label}</span>
+                  <div class="useful-copy">
+                    <div class="useful-meta">
+                      <strong>${structure.useful.primary.methods.join('・')}</strong>
+                      <span class="structure-confidence">把握 ${structure.useful.primary.confidenceText}</span>
+                    </div>
+                    <p class="structure-reason">${structure.useful.primary.reason}</p>
+                  </div>
+                </div>
+                ${structure.useful.candidates.length > 1 ? `
+                  <div class="useful-list">
+                    ${structure.useful.candidates.slice(1).map((candidate) => `
+                      <div class="useful-row">
+                        <b class="${elClass(candidate.element)}">${candidate.label}</b>
+                        <span>${candidate.methods.join('・')}</span>
+                        <i>${candidate.confidenceText}</i>
+                      </div>
+                    `).join('')}
+                  </div>` : ''}
+                ${structure.useful.avoid.length ? `
+                  <div class="favor-row">
+                    <span class="favor-label">較忌</span>
+                    ${structure.useful.avoid.map((row) => `<span class="favor-chip ${elClass(row.element)}">${row.label}</span>`).join('')}
+                  </div>` : ''}
+              </div>
+            </div>
+            <p class="tiny-note">${structure.notes.join(' ')}</p>
           </section>
 
           <section class="card luck-panel reveal" style="--delay: 60ms" id="luck-section">
@@ -1253,6 +1295,7 @@ function renderChart(chart) {
         <h1>知命 · ${esc(name)}的命盤</h1>
         <p>${gender}命 · 公曆 ${solarText} · 農曆 ${chart.lunarText}</p>
         <p>四柱：${chart.fourPillarsText} · 日主 ${dm.char}${dm.elementLabel} · ${dm.strength}</p>
+        <p>格局：${structure.primary.name}（${structure.primary.confidenceText}）　用神：${structure.useful.primary.label}（${structure.useful.primary.methods.join('、')}）</p>
         <p>大運：${chart.luck.directionLabel}　${selected.startText} 至 ${selected.endText}（${selected.stemChar}${selected.branchChar}）</p>
         <p>所選時點：${printPeriodText}</p>
         <p>天干留意：${printJoin(printWatch.interactions.stems, '無合沖')}</p>
@@ -2516,6 +2559,8 @@ function chartToText(chart, options = {}) {
   lines.push(`農曆：${chart.lunarText}`);
   lines.push(`四柱：${chart.fourPillarsText}`);
   lines.push(`日主：${chart.dayMaster.char}${chart.dayMaster.elementLabel} · ${chart.dayMaster.strength}`);
+  lines.push(`格局：${chart.structure.primary.name}（取格把握 ${chart.structure.primary.confidenceText}）`);
+  lines.push(`用神：${chart.structure.useful.primary.label} · ${chart.structure.useful.primary.methods.join('、')}（把握 ${chart.structure.useful.primary.confidenceText}）`);
   lines.push(`大運：${chart.luck.directionLabel}，${chart.luck.startLabel}起運，${chart.luck.jiaoyunText}交運`);
   const step = chart.luck.steps[state.selectedLuck] || chart.luck.steps[0];
   const watch = watchData(chart, step);
@@ -2678,6 +2723,7 @@ function exportChartImage() {
   ctx.fillText(`五行：${chart.elements.map((e) => `${e.label}${e.percent}%`).join('　')}`, 76, 710);
   ctx.fillText(`大運：${chart.luck.directionLabel} · ${chart.luck.startLabel}起運 · ${chart.luck.jiaoyunText}交運`, 76, 742);
   ctx.fillText(`運程：${step.startText} 至 ${step.endText}（${step.stemChar}${step.branchChar} ${step.tenGod}）`, 76, 774);
+  ctx.fillText(`格局：${chart.structure.primary.name}（${chart.structure.primary.confidenceText}）· 用神：${chart.structure.useful.primary.label}（${chart.structure.useful.primary.methods.join('、')}）`, 76, 806);
 
   ctx.fillStyle = '#2b2520';
   ctx.font = `600 18px ${serif}`;

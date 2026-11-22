@@ -1,4 +1,4 @@
-const VERSION = 'zhiming-20261143';
+const VERSION = 'zhiming-20261144';
 const PRECACHE = [
   './',
   './index.html',
@@ -8,14 +8,14 @@ const PRECACHE = [
   './assets/icons/icon-512.png',
   './assets/icons/icon-1024.png',
   './assets/icons/apple-touch-icon.png',
-  './assets/css/style.css?v=20261143',
-  './assets/js/app.js?v=20261143',
-  './assets/js/astro.js?v=20261143',
-  './assets/js/bazi.js?v=20261143',
-  './assets/js/data.js?v=20261143',
-  './assets/js/glossary.js?v=20261143',
-  './assets/js/learn.js?v=20261143',
-  './assets/js/solar-terms.js?v=20261143',
+  './assets/css/style.css?v=20261144',
+  './assets/js/app.js?v=20261144',
+  './assets/js/astro.js?v=20261144',
+  './assets/js/bazi.js?v=20261144',
+  './assets/js/data.js?v=20261144',
+  './assets/js/glossary.js?v=20261144',
+  './assets/js/learn.js?v=20261144',
+  './assets/js/solar-terms.js?v=20261144',
 ];
 
 const MAX_CACHE_ENTRIES = 80;

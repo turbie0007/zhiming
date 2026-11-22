@@ -26,6 +26,21 @@ export const HIDDEN_WEIGHTS = [
   [0.70, 0.30], [0.60, 0.28, 0.12], [0.60, 0.28, 0.12], [1], [0.60, 0.28, 0.12], [0.70, 0.30],
 ];
 
+export const CLIMATE = {
+  0: { label: '仲冬', text: '水冷木寒，調候重在暖局；全局過寒時，火氣最能提神。', keys: ['fire'] },
+  1: { label: '季冬', text: '濕寒未退，土凍水冷，調候同樣以火暖局為先。', keys: ['fire'] },
+  2: { label: '初春', text: '餘寒未盡，木氣初生，宜火暖木、金修剪。', keys: ['fire', 'metal'] },
+  3: { label: '仲春', text: '木旺而濕，調候取火泄秀、金修剪，使木不偏枯。', keys: ['fire', 'metal'] },
+  4: { label: '季春', text: '土濕木盛，宜火暖土、木疏土，令氣機流通。', keys: ['fire', 'wood'] },
+  5: { label: '初夏', text: '火氣漸旺，燥熱將起，以水潤局為調候主軸。', keys: ['water'] },
+  6: { label: '仲夏', text: '炎熱當令，最忌燥烈，調候重在水潤。', keys: ['water'] },
+  7: { label: '季夏', text: '燥土當權，水氣不足，仍以水潤土為先。', keys: ['water'] },
+  8: { label: '初秋', text: '金旺氣肅，宜火煉金、水潤燥，使剛而不脆。', keys: ['fire', 'water'] },
+  9: { label: '仲秋', text: '金旺而燥，調候取火煉金、水洗金，剛柔相濟。', keys: ['fire', 'water'] },
+  10: { label: '季秋', text: '燥土傷金，宜水潤燥、木疏土，避免過乾。', keys: ['water', 'wood'] },
+  11: { label: '初冬', text: '水寒金冷，調候以火暖局，使生機不絕。', keys: ['fire'] },
+};
+
 export const TEN_GODS = ['比肩', '劫財', '食神', '傷官', '偏財', '正財', '七殺', '正官', '偏印', '正印'];
 export const TEN_GOD_SHORT = {
   比肩: '比', 劫財: '劫', 食神: '食', 傷官: '傷', 偏財: '才', 正財: '財',

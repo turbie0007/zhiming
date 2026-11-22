@@ -265,7 +265,7 @@
   </main>
 
   <script type="module">
-    import { computeChart } from './assets/js/bazi.js?v=20261143';
+    import { computeChart } from './assets/js/bazi.js?v=20261144';
 
     const BASE = { gender: 'male', city: '北京', lateZi: true, trueSolar: false };
     const gz = (p) => (p ? `${p.stemChar}${p.branchChar}` : '—');
@@ -405,6 +405,75 @@
           男命: '陰年男逆行（起運節 白露）',
           女命: '陰年女順行（起運節 寒露）',
         },
+      },
+      {
+        title: '格局：月令本氣透干取七殺格',
+        note: '甲辰 丙寅 戊戌 辛酉。寅藏甲丙戊，甲透年干，取七殺格；丙透月干，兼偏印格。身弱取火印為用。',
+        input: { solar: { y: 2024, m: 2, d: 4 }, time: { h: 17, min: 0 } },
+        actual: (c) => ({
+          格局: c.structure.primary.name,
+          取格把握: c.structure.primary.confidenceText,
+          兼格: c.structure.candidates.slice(1).map((row) => row.name).join('、') || '無',
+          用神: c.structure.useful.primary.label,
+          用神方法: c.structure.useful.primary.methods.join('、'),
+        }),
+        expect: {
+          格局: '七殺格', 取格把握: '高', 兼格: '偏印格',
+          用神: '火', 用神方法: '扶抑、格局配合、調候',
+        },
+      },
+      {
+        title: '格局：月令本氣未透仍取正官格',
+        note: '甲辰 丁卯 戊辰 戊午。卯藏乙正官，未見於年、月、時干，以本氣取正官格；中和以火通關、調候。',
+        input: { solar: { y: 2024, m: 3, d: 5 }, time: { h: 11, min: 0 } },
+        actual: (c) => ({
+          格局: c.structure.primary.name,
+          取格把握: c.structure.primary.confidenceText,
+          用神: c.structure.useful.primary.label,
+          用神方法: c.structure.useful.primary.methods.join('、'),
+        }),
+        expect: {
+          格局: '正官格', 取格把握: '中',
+          用神: '火', 用神方法: '扶抑、格局配合、通關、調候',
+        },
+      },
+      {
+        title: '格局：身弱正官格以印通關',
+        note: '己丑 癸酉 甲子 庚午。酉月辛正官未透，取正官格；身弱以水印生扶。',
+        input: { solar: { y: 1949, m: 10, d: 1 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          格局: c.structure.primary.name,
+          用神: c.structure.useful.primary.label,
+          用神方法: c.structure.useful.primary.methods.join('、'),
+          忌: c.structure.useful.avoid.map((row) => row.label).join('、'),
+        }),
+        expect: {
+          格局: '正官格', 用神: '水',
+          用神方法: '扶抑、格局配合、調候', 忌: '土、金',
+        },
+      },
+      {
+        title: '格局：身強正財格取財星',
+        note: '己卯 丙子 戊午 戊午。子月癸正財未透，取正財格；身強以水財耗身。',
+        input: { solar: { y: 2000, m: 1, d: 1 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          格局: c.structure.primary.name,
+          用神: c.structure.useful.primary.label,
+          用神方法: c.structure.useful.primary.methods.join('、'),
+        }),
+        expect: { 格局: '正財格', 用神: '水', 用神方法: '扶抑' },
+      },
+      {
+        title: '格局：月令臨官取建祿格',
+        note: '甲辰 丙寅 甲辰 庚午。日主甲木臨官於寅，取建祿格；丙透月干兼食神格。',
+        input: { solar: { y: 2024, m: 2, d: 10 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          格局: c.structure.primary.name,
+          取格把握: c.structure.primary.confidenceText,
+          兼格: c.structure.candidates.slice(1).map((row) => row.name).join('、') || '無',
+          用神: c.structure.useful.primary.label,
+        }),
+        expect: { 格局: '建祿格', 取格把握: '高', 兼格: '食神格', 用神: '火' },
       },
     ];
 
