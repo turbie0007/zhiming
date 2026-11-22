@@ -1,16 +1,21 @@
 import {
-  STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
+  STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261144';
+} from './data.js?v=20261145';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261144';
+} from './bazi.js?v=20261145';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
-} from './astro.js?v=20261144';
-import { ARTICLES } from './learn.js?v=20261144';
-import { GLOSSARY } from './glossary.js?v=20261144';
+  getSolarTermTs, getSolarTermName,
+} from './astro.js?v=20261145';
+import {
+  isNative, haptic, shareNative, notificationPermission,
+  requestNotificationPermission, scheduleNotifications, cancelNotifications,
+} from './native.js?v=20261145';
+import { ARTICLES } from './learn.js?v=20261145';
+import { GLOSSARY } from './glossary.js?v=20261145';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -19,6 +24,7 @@ const STORAGE = {
   lastInput: 'zhiming.lastInput.v2',
   theme: 'zhiming.theme.v1',
   recordsSort: 'zhiming.recordsSort.v1',
+  reminders: 'zhiming.reminders.v1',
 };
 
 const MAX_RECORDS = 500;
@@ -200,6 +206,7 @@ function closeTerm(restoreFocus = false) {
 async function copyText(text, message = '已複製到剪貼板') {
   try {
     await navigator.clipboard.writeText(text);
+    haptic('LIGHT');
     toast(message);
   } catch {
     const ta = document.createElement('textarea');
@@ -210,6 +217,7 @@ async function copyText(text, message = '已複製到剪貼板') {
     ta.select();
     try {
       document.execCommand('copy');
+      haptic('LIGHT');
       toast(message);
     } catch {
       toast('複製失敗，請手動選擇文本');
@@ -457,6 +465,8 @@ function route(options = {}) {
     return;
   } else if (path === '/about') {
     renderAbout();
+  } else if (path === '/privacy') {
+    renderPrivacy();
   } else {
     renderError('這個地址沒有對應的頁面，可能是舊鏈接，或輸入有誤。', '頁面不存在', '頁面不存在');
   }
@@ -466,7 +476,7 @@ function route(options = {}) {
 function updateNav(path) {
   const key = path.startsWith('/records') || path.startsWith('/compare') ? 'records'
     : path.startsWith('/learn') || path.startsWith('article-') ? 'learn'
-      : path.startsWith('/about') ? 'about'
+      : path.startsWith('/about') || path.startsWith('/privacy') ? 'about'
         : 'home';
   document.querySelectorAll('[data-nav]').forEach((a) => {
     a.classList.toggle('is-active', a.dataset.nav === key);
@@ -2499,10 +2509,126 @@ function renderLearn() {
   `;
 }
 
+// ---- Solar-term reminders ----
+
+const REMINDERS = { firstId: 260000, slots: 24, horizon: 12 };
+
+function loadReminderPrefs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.reminders) || '{}');
+    return { solarTerms: !!raw.solarTerms };
+  } catch {
+    return { solarTerms: false };
+  }
+}
+
+function saveReminderPrefs(prefs) {
+  try {
+    localStorage.setItem(STORAGE.reminders, JSON.stringify(prefs));
+  } catch {
+    // Storage may be full; the toggle simply will not persist.
+  }
+}
+
+function upcomingSolarTerms(count = REMINDERS.horizon) {
+  const now = Date.now() + 8 * 3600000;
+  const startYear = new Date(now).getUTCFullYear();
+  const list = [];
+  for (let year = startYear; year <= startYear + 2; year++) {
+    for (let index = 0; index < 24; index++) {
+      const ts = getSolarTermTs(year, index);
+      if (ts != null && ts > now + 60000) list.push({ ts, index, name: getSolarTermName(index) });
+    }
+  }
+  list.sort((a, b) => a.ts - b.ts);
+  return list.slice(0, count);
+}
+
+function reminderIdList() {
+  return Array.from({ length: REMINDERS.slots }, (_, i) => REMINDERS.firstId + i);
+}
+
+function solarTermText(term) {
+  const when = formatDate(term.ts);
+  if (term.index === 2) return `${when} 立春，年、月柱自此更新。`;
+  if (JIE_MAP.some(([index]) => index === term.index)) return `${when} 交節，月柱自此更新。`;
+  return `${when} 交氣，時序過半。`;
+}
+
+function solarTermNotifications() {
+  // Term timestamps hold Beijing wall clock in UTC, so shift by -8h for the real instant.
+  return upcomingSolarTerms().map((term, i) => ({
+    id: REMINDERS.firstId + i,
+    title: `節氣 · ${term.name}`,
+    body: solarTermText(term),
+    schedule: { at: new Date(term.ts - 8 * 3600000) },
+  }));
+}
+
+async function syncSolarTermReminders({ ask = false } = {}) {
+  if (!isNative()) return false;
+  if (!loadReminderPrefs().solarTerms) {
+    await cancelNotifications(reminderIdList());
+    return false;
+  }
+  const granted = ask
+    ? await requestNotificationPermission()
+    : (await notificationPermission()) === 'granted';
+  if (!granted) return false;
+  await cancelNotifications(reminderIdList());
+  return scheduleNotifications(solarTermNotifications());
+}
+
+function bindReminderSettings() {
+  const toggle = document.getElementById('solar-reminder');
+  if (!toggle) return;
+  const note = document.getElementById('solar-reminder-note');
+  const prefs = loadReminderPrefs();
+  const setNote = (text) => {
+    if (note) note.textContent = text;
+  };
+  toggle.checked = prefs.solarTerms;
+  if (prefs.solarTerms) setNote(`已排定接下來 ${upcomingSolarTerms().length} 個節氣提醒。`);
+  toggle.addEventListener('change', async () => {
+    haptic('MEDIUM');
+    prefs.solarTerms = toggle.checked;
+    saveReminderPrefs(prefs);
+    if (!prefs.solarTerms) {
+      await cancelNotifications(reminderIdList());
+      setNote('已關閉節氣提醒。');
+      toast('已關閉節氣提醒');
+      return;
+    }
+    const ok = await syncSolarTermReminders({ ask: true });
+    if (!ok) {
+      toggle.checked = false;
+      prefs.solarTerms = false;
+      saveReminderPrefs(prefs);
+      setNote('未取得通知權限，可到系統設定允許通知後再試。');
+      toast('未取得通知權限');
+      return;
+    }
+    setNote(`已排定接下來 ${upcomingSolarTerms().length} 個節氣提醒。`);
+    toast('已開啟節氣提醒');
+  });
+}
+
 // ---- About ----
 
 function renderAbout() {
   document.title = '知命 · 關於';
+  const reminderCard = isNative() ? `
+        <article class="about-card reveal" style="--delay:240ms">
+          <span class="about-index">伍</span>
+          <h2>節氣提醒</h2>
+          <p>在二十四個節氣交接時提醒一次；逢節令，月柱自此更新。提醒只排在你的裝置上，不經過伺服器。</p>
+          <label class="switch-row">
+            <input type="checkbox" id="solar-reminder" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span>開啟節氣提醒</span>
+          </label>
+          <p class="tiny-note" id="solar-reminder-note">節氣交接時提醒一次；可隨時關閉。</p>
+        </article>` : '';
   app.innerHTML = `
     <div class="wrap page about-page">
       <header class="page-head reveal">
@@ -2521,6 +2647,7 @@ function renderAbout() {
           <span class="about-index">貳</span>
           <h2>數據與隱私</h2>
           <p>沒有帳戶，沒有服務器寫入。出生信息只在你的瀏覽器裏計算；命例保存在 localStorage。分享鏈接會把出生信息編碼進鏈接本身，點擊前請確認接收方可以查看。</p>
+          <a href="#/privacy" class="card-link">完整隱私政策 ${icon('arrowRight', 14)}</a>
         </article>
         <article class="about-card reveal" style="--delay:120ms">
           <span class="about-index">叄</span>
@@ -2532,6 +2659,7 @@ function renderAbout() {
           <h2>參考與邊界</h2>
           <p>術語與取象參考《淵海子平》《三命通會》《子平真詮》《窮通寶鑑》等傳統文獻。五行比例、身強身弱與喜用提示是簡化的教學性計算，不是命理斷語。</p>
         </article>
+        ${reminderCard}
       </section>
 
       <section class="about-quote reveal">
@@ -2543,6 +2671,57 @@ function renderAbout() {
         <h3>免責聲明</h3>
         <p>本站內容用於傳統文化研習與信息整理，不構成醫療、法律、投資、婚戀或任何現實決策建議。請勿依據排盤結果作出重大決定。</p>
         <p class="about-tech">純靜態頁面 · 無追蹤 · 本地計算 · <a href="tests.html">排盤回歸測試</a></p>
+      </section>
+    </div>
+  `;
+  bindReminderSettings();
+}
+
+// ---- Privacy ----
+
+function renderPrivacy() {
+  document.title = '知命 · 隱私政策';
+  app.innerHTML = `
+    <div class="wrap page about-page privacy-page">
+      <header class="page-head reveal">
+        <p class="eyebrow"><span class="eyebrow-line"></span>隱私</p>
+        <h1>隱私政策</h1>
+        <p class="page-lede">知命不設帳號，也不把命盤寫進伺服器。以下說明資料放在哪裏、如何刪除，以及 App 會用到哪些系統權限。</p>
+        <p class="privacy-meta">生效日期：2026年11月22日 · 適用於網頁版與 iOS／Android App</p>
+      </header>
+
+      <section class="card privacy-body prose reveal">
+        <h2>一、蒐集範圍</h2>
+        <p>知命沒有帳號系統，也沒有伺服器端資料庫，不蒐集、不上傳、不販售個人資料。App 不含廣告、分析、當機回報或追蹤 SDK；網頁版不載入第三方腳本與字型。</p>
+
+        <h2>二、留在裝置上的資料</h2>
+        <p>你輸入的姓名（選填）、性別、出生日期與時間、曆法與校正選項，以及命例的標籤、備註、資料夾，會保存在目前裝置的瀏覽器或 App 儲存空間（localStorage）。版面主題、命例排序與最近一次輸入也會一併保存，方便下次開啟。</p>
+        <p>這些資料只用於在本機排盤與顯示，不會離開裝置。移除 App、清除網站資料，或在命例頁刪除命例後，資料即不再存在，知命無法代你復原。</p>
+
+        <h2>三、分享鏈接與存圖</h2>
+        <p>分享鏈接把出生資訊編碼在網址的片段（# 之後）裏，不會送到任何伺服器；你也可以選擇不含姓名的分享方式。收到鏈接的人可以看到鏈接中的出生資訊，請在分享前自行確認。</p>
+        <p>命盤圖片、複製文字與列印都在本機完成，不會上傳。使用系統分享面板時，資料的去向由你在面板中選擇。</p>
+
+        <h2>四、通知</h2>
+        <p>App 可選擇開啟節氣提醒。提醒由裝置本機排程，內容由本機計算，不經過推播伺服器。你可以隨時在 App 內關閉，或到系統設定撤回通知權限。</p>
+
+        <h2>五、系統權限</h2>
+        <p>知命只會在你主動開啟提醒時要求通知權限，其餘時間不使用相機、麥克風、通訊錄、定位或健康資料。分享與存圖交由系統面板處理，不額外申請權限。</p>
+
+        <h2>六、兒童與敏感資料</h2>
+        <p>知命是一般性的傳統文化研習工具，不針對兒童設計，也不主動蒐集任何年齡層的資料。命盤屬於你自行輸入的內容，請避免在姓名欄填寫不必要的敏感資訊。</p>
+
+        <h2>七、政策更新</h2>
+        <p>若資料處理方式有變，會先更新本頁與生效日期，再隨版本發布。重大變更會在 App 更新說明中提示。</p>
+
+        <h2>八、聯絡方式</h2>
+        <p>如對本政策有疑問，可透過 App Store 或 Google Play 商店頁面所列的開發者聯絡方式與我們聯繫。</p>
+      </section>
+
+      <section class="about-disclaimer reveal">
+        <h3>回到關於</h3>
+        <p>知命呈現推算過程，不作吉凶斷定，也不替代任何現實決策。</p>
+        <p class="about-tech"><a href="#/about">關於知命</a> · <a href="tests.html">排盤回歸測試</a></p>
       </section>
     </div>
   `;
@@ -2610,14 +2789,28 @@ function saveCurrent() {
     toast('儲存空間不足，未能保存；請先匯出備份');
     return;
   }
+  haptic('MEDIUM');
   toast(twin
     ? `已保存；與「${twin.input.name || '未具名'}」出生資料相同`
     : '已保存到命例');
 }
 
-function shareCurrent() {
+async function shareCurrent() {
   if (!state.chart) return;
   const hide = !!state.chart.input.shareHideName;
+  if (isNative()) {
+    const ok = await shareNative({
+      title: '知命 · 四柱排盤',
+      text: chartToText(state.chart, { hideName: hide }),
+    });
+    if (ok) {
+      haptic('LIGHT');
+      toast('已開啟分享');
+    } else {
+      toast('未能開啟分享');
+    }
+    return;
+  }
   const input = hide ? { ...state.chart.input, name: '' } : state.chart.input;
   const payload = encodeInput({ v: 2, input, view: viewFromState() });
   const url = `${location.origin}${location.pathname}#/view/${payload}`;
@@ -3065,6 +3258,7 @@ initTheme();
 state.records = loadRecords();
 state.recordSort = loadRecordSort();
 route();
+syncSolarTermReminders().catch(() => {});
 
 function setupServiceWorker() {
   if (window.Capacitor?.isNativePlatform?.()) return;

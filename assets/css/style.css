@@ -2842,6 +2842,99 @@ input, select, textarea {
   color: var(--gold) !important;
 }
 
+/* ---------- Privacy ---------- */
+
+.privacy-meta {
+  margin-top: 14px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.privacy-body {
+  padding: 30px clamp(20px, 4vw, 40px);
+}
+
+.privacy-body h2 {
+  margin: 28px 0 8px;
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.privacy-body h2:first-child {
+  margin-top: 0;
+}
+
+.privacy-body p {
+  font-size: 13px;
+}
+
+.privacy-page .about-disclaimer {
+  margin-top: 32px;
+}
+
+/* ---------- Reminder switch ---------- */
+
+.switch-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switch-row input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.switch-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-3);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.switch-row input:checked + .switch-track {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar);
+}
+
+.switch-row input:checked + .switch-track::after {
+  transform: translateX(18px);
+  border-color: #fff;
+  background: #fff;
+}
+
+.switch-row input:focus-visible + .switch-track {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
+
 /* ---------- Error ---------- */
 
 .error-page {
@@ -3142,6 +3235,23 @@ body:has(.update-banner:not([hidden])) .toast {
 
   body:has(.update-banner:not([hidden])) .toast {
     bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 420px) {
+  .update-banner {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .update-banner p {
+    flex: 1 1 100%;
+  }
+
+  .update-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 
