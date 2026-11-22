@@ -4,4 +4,6 @@
     <string name="title_activity_main">知命</string>
     <string name="package_name">top.turbie.zhiming</string>
     <string name="custom_url_scheme">top.turbie.zhiming</string>
+    <string name="widget_label">知命 · 今日</string>
+    <string name="widget_description">今日干支、農曆與生肖</string>
 </resources>
