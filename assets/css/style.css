@@ -3665,14 +3665,160 @@ body:has(.update-banner:not([hidden])) .toast {
   cursor: default;
 }
 
+.record-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.record-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.record-control select {
+  height: 32px;
+  max-width: 190px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-2);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+.chip-btn.is-on {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+  color: var(--cinnabar);
+}
+
+.chip-btn.danger {
+  border-color: color-mix(in srgb, var(--cinnabar) 45%, var(--line));
+  color: var(--cinnabar-2);
+}
+
+.chip-btn.danger:hover {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+  color: var(--cinnabar);
+}
+
 .record-tools {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
 .record-tools .icon-btn {
   width: 32px;
   height: 32px;
+}
+
+.record-check {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.record-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--cinnabar);
+  cursor: pointer;
+}
+
+.dup-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gold);
+}
+
+.record-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  font-size: 9.5px;
+  color: var(--ink-2);
+}
+
+.batch-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: -8px 0 18px;
+  padding: 14px 16px;
+  border: 1px dashed var(--cinnabar);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cinnabar) 4%, var(--paper-2));
+}
+
+.batch-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.batch-head > span {
+  margin-right: 4px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.batch-tools {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.batch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+
+.batch-field input {
+  width: 170px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+.batch-field input:focus {
+  outline: 0;
+  border-color: var(--cinnabar);
 }
 
 .record-tag-row {
@@ -3973,6 +4119,23 @@ body:has(.update-banner:not([hidden])) .toast {
   }
 
   .records-toolbar-main {
+    width: 100%;
+  }
+
+  .record-control {
+    flex: 1 1 140px;
+  }
+
+  .record-control select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .batch-field {
+    flex: 1 1 140px;
+  }
+
+  .batch-field input {
     width: 100%;
   }
 }

@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261141';
+} from './data.js?v=20261142';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261141';
+} from './bazi.js?v=20261142';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
-} from './astro.js?v=20261141';
-import { ARTICLES } from './learn.js?v=20261141';
-import { GLOSSARY } from './glossary.js?v=20261141';
+} from './astro.js?v=20261142';
+import { ARTICLES } from './learn.js?v=20261142';
+import { GLOSSARY } from './glossary.js?v=20261142';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -18,6 +18,7 @@ const STORAGE = {
   backup: 'zhiming.backup.v1',
   lastInput: 'zhiming.lastInput.v2',
   theme: 'zhiming.theme.v1',
+  recordsSort: 'zhiming.recordsSort.v1',
 };
 
 const MAX_RECORDS = 500;
@@ -56,6 +57,11 @@ const state = {
   records: [],
   recordQuery: '',
   recordTag: '',
+  recordFolder: '',
+  recordDupOnly: false,
+  recordSort: 'newest',
+  recordSelect: false,
+  recordSelection: [],
   compare: { a: null, b: null },
 };
 
@@ -76,6 +82,7 @@ const ICONS = {
   moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>',
   bookmark: '<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/>',
@@ -273,7 +280,55 @@ function upgradeRecord(record) {
     ...record,
     tags,
     note: typeof record.note === 'string' ? record.note : '',
+    folder: typeof record.folder === 'string' ? record.folder.trim().slice(0, 20) : '',
   };
+}
+
+const RECORD_SORTS = new Set(['newest', 'oldest', 'name', 'birthAsc', 'birthDesc']);
+const RECORD_SORT_OPTIONS = [
+  ['newest', '最新保存'],
+  ['oldest', '最早保存'],
+  ['name', '姓名'],
+  ['birthAsc', '出生早→晚'],
+  ['birthDesc', '出生晚→早'],
+];
+
+function loadRecordSort() {
+  try {
+    const stored = localStorage.getItem(STORAGE.recordsSort);
+    return RECORD_SORTS.has(stored) ? stored : 'newest';
+  } catch {
+    return 'newest';
+  }
+}
+
+function saveRecordSort(mode) {
+  try {
+    localStorage.setItem(STORAGE.recordsSort, mode);
+  } catch {
+    // sorting still works for this session
+  }
+}
+
+function birthKey(input) {
+  return inputSignature({ ...input, name: '' });
+}
+
+function recordSolarNumber(input) {
+  const solar = normalizedSolar(input) || input.solar || {};
+  return (Number(solar.y) || 0) * 10000 + (Number(solar.m) || 0) * 100 + (Number(solar.d) || 0);
+}
+
+function sortRecords(records, mode) {
+  const list = [...records];
+  const created = (record) => Date.parse(record.createdAt || '') || 0;
+  const name = (record) => record.input.name || '';
+  if (mode === 'oldest') list.sort((a, b) => created(a) - created(b));
+  else if (mode === 'name') list.sort((a, b) => name(a).localeCompare(name(b), 'zh-Hant'));
+  else if (mode === 'birthAsc') list.sort((a, b) => recordSolarNumber(a.input) - recordSolarNumber(b.input));
+  else if (mode === 'birthDesc') list.sort((a, b) => recordSolarNumber(b.input) - recordSolarNumber(a.input));
+  else list.sort((a, b) => created(b) - created(a));
+  return list;
 }
 
 function loadRecords() {
@@ -1852,6 +1907,36 @@ function collectRecordTags(records) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag, count]) => ({ tag, count }));
 }
 
+function collectRecordFolders(records) {
+  const counts = new Map();
+  records.forEach((record) => {
+    const folder = record.folder || '';
+    if (folder) counts.set(folder, (counts.get(folder) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], 'zh-Hant'))
+    .map(([name, count]) => ({ name, count }));
+}
+
+function duplicateInfo(records) {
+  const groups = new Map();
+  records.forEach((record) => {
+    const key = birthKey(record.input);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  });
+  const counts = new Map();
+  const ids = new Set();
+  groups.forEach((list) => {
+    if (list.length < 2) return;
+    list.forEach((record) => {
+      counts.set(record.id, list.length);
+      ids.add(record.id);
+    });
+  });
+  return { counts, ids };
+}
+
 function backupNoticeHtml(records) {
   if (!backupNoticeDue(records)) return '';
   const meta = loadBackupMeta();
@@ -1875,9 +1960,23 @@ function backupNoticeHtml(records) {
 function renderRecords() {
   document.title = '知命 · 命例';
   state.records = loadRecords();
+  if (!state.records.length) {
+    state.recordSelect = false;
+    state.recordSelection = [];
+    state.recordDupOnly = false;
+  }
+  state.recordSelection = state.recordSelection.filter((id) => state.records.some((record) => record.id === id));
   const tagList = collectRecordTags(state.records);
+  const folders = collectRecordFolders(state.records);
+  const duplicates = duplicateInfo(state.records);
   if (state.recordTag && !tagList.some(({ tag }) => tag === state.recordTag)) state.recordTag = '';
-  const cards = state.records.map((record) => {
+  if (state.recordFolder && state.recordFolder !== '__none__' && !folders.some(({ name }) => name === state.recordFolder)) {
+    state.recordFolder = '';
+  }
+  if (state.recordDupOnly && !duplicates.ids.size) state.recordDupOnly = false;
+  if (!RECORD_SORTS.has(state.recordSort)) state.recordSort = 'newest';
+  const sorted = sortRecords(state.records, state.recordSort);
+  const cards = sorted.map((record) => {
     let chart;
     try {
       chart = computeChart(record.input);
@@ -1886,27 +1985,34 @@ function renderRecords() {
     }
     const solarText = solarDateText(chart);
     const tags = record.tags || [];
+    const folder = record.folder || '';
     const note = record.note || '';
+    const selected = state.recordSelection.includes(record.id);
+    const dupCount = duplicates.counts.get(record.id) || 0;
     const searchText = [
       record.input.name || '未具名',
       chart.solarDate.y, `${chart.solarDate.m}`.padStart(2, '0'), `${chart.solarDate.d}`.padStart(2, '0'),
       solarText, chart.lunarText, chart.fourPillarsText, chart.animal, chart.timeUnknown ? '時辰未知' : '',
       `${chart.dayMaster.char}${chart.dayMaster.elementLabel}`, chart.dayMaster.strength,
-      tags.join(' '), note,
+      tags.join(' '), folder, note,
     ].join(' ');
     return `
-      <article class="record-card" data-record-id="${esc(record.id)}" data-search="${esc(searchText)}" data-tags="|${esc(tags.join('|'))}|">
+      <article class="record-card" data-record-id="${esc(record.id)}" data-search="${esc(searchText)}" data-tags="|${esc(tags.join('|'))}|" data-folder="${esc(folder)}" data-dup="${dupCount ? '1' : '0'}">
         <div class="record-head">
           <div>
-            <h3>${esc(record.input.name || '未具名')} <small>${GENDER_LABEL[record.input.gender]}</small></h3>
+            <h3>${esc(record.input.name || '未具名')} <small>${GENDER_LABEL[record.input.gender]}</small>${dupCount ? `<span class="dup-badge" title="${dupCount} 張命例的出生資料相同">重複 ${dupCount}</span>` : ''}</h3>
             <p>${solarText} · ${chart.lunarText}</p>
           </div>
           <div class="record-tools">
-            <button class="icon-btn" type="button" data-action="edit-record" data-id="${esc(record.id)}" aria-label="編輯標籤與備註">${icon('edit', 16)}</button>
+            ${state.recordSelect ? `<label class="record-check"><input type="checkbox" data-select-id="${esc(record.id)}" ${selected ? 'checked' : ''} aria-label="選取 ${esc(record.input.name || '未具名')}"></label>` : ''}
+            <button class="icon-btn" type="button" data-action="edit-record" data-id="${esc(record.id)}" aria-label="編輯資料夾、標籤與備註">${icon('edit', 16)}</button>
             <button class="icon-btn danger" type="button" data-action="delete-record" data-id="${esc(record.id)}" aria-label="刪除命例">${icon('trash', 16)}</button>
           </div>
         </div>
-        ${tags.length ? `<div class="record-tag-row">${tags.map((tag) => `<span class="tag-chip is-static">${esc(tag)}</span>`).join('')}</div>` : ''}
+        ${(folder || tags.length) ? `<div class="record-tag-row">
+          ${folder ? `<span class="record-folder" title="資料夾">${icon('folder', 12)}${esc(folder)}</span>` : ''}
+          ${tags.map((tag) => `<span class="tag-chip is-static">${esc(tag)}</span>`).join('')}
+        </div>` : ''}
         <div class="record-pillars">
           ${chart.pillarList.map((p) => `<span><b class="${elClass(p.stemElement)}">${p.stemChar}</b><b class="${elClass(p.branchElement)}">${p.branchChar}</b></span>`).join('')}
         </div>
@@ -1916,6 +2022,7 @@ function renderRecords() {
           <button class="record-open" type="button" data-action="open-record" data-id="${esc(record.id)}">打開命盤 ${icon('arrowRight', 14)}</button>
         </div>
         <form class="record-editor" data-editor-for="${esc(record.id)}" hidden>
+          <label>資料夾 <input name="folder" type="text" maxlength="20" list="record-folders" value="${esc(folder)}" placeholder="選填，例如：家人"></label>
           <label>標籤 <input name="tags" type="text" maxlength="80" value="${esc(tags.join('、'))}" placeholder="家人、客戶、研究，以頓號分隔"></label>
           <label>備註 <textarea name="note" rows="2" maxlength="500" placeholder="選填，只存在本機">${esc(note)}</textarea></label>
           <div class="record-editor-actions">
@@ -1927,6 +2034,34 @@ function renderRecords() {
     `;
   }).join('');
   const hasRecords = state.records.length > 0;
+  const unclassified = state.records.filter((record) => !record.folder).length;
+  const sortOptions = RECORD_SORT_OPTIONS
+    .map(([value, label]) => `<option value="${value}" ${state.recordSort === value ? 'selected' : ''}>${label}</option>`)
+    .join('');
+  const folderOptions = [
+    `<option value="" ${state.recordFolder ? '' : 'selected'}>全部資料夾（${state.records.length}）</option>`,
+    unclassified ? `<option value="__none__" ${state.recordFolder === '__none__' ? 'selected' : ''}>未分類（${unclassified}）</option>` : '',
+    ...folders.map(({ name, count }) => `<option value="${esc(name)}" ${state.recordFolder === name ? 'selected' : ''}>${esc(name)}（${count}）</option>`),
+  ].join('');
+  const batchBar = state.recordSelect ? `
+    <div class="batch-bar reveal" id="batch-bar">
+      <div class="batch-head">
+        <span id="batch-count" aria-live="polite">已選 ${state.recordSelection.length} 張</span>
+        <button class="chip-btn subtle" type="button" data-action="select-visible">選取顯示中的命例</button>
+        <button class="chip-btn subtle" type="button" data-action="clear-selection">清除選取</button>
+      </div>
+      <div class="batch-tools">
+        <label class="batch-field"><span>資料夾</span>
+          <input id="batch-folder" type="text" maxlength="20" placeholder="留空＝取消分類">
+        </label>
+        <button class="chip-btn subtle" type="button" data-action="batch-folder">移動</button>
+        <label class="batch-field"><span>標籤</span>
+          <input id="batch-tag" type="text" maxlength="80" placeholder="可多個，以頓號分隔">
+        </label>
+        <button class="chip-btn subtle" type="button" data-action="batch-tag">加入</button>
+        <button class="chip-btn danger" type="button" data-action="batch-delete" data-confirm="0">刪除所選</button>
+      </div>
+    </div>` : '';
 
   app.innerHTML = `
     <div class="wrap page">
@@ -1940,8 +2075,18 @@ function renderRecords() {
         <div class="records-toolbar-main">
           <span id="record-count" aria-live="polite">共 ${state.records.length} 張命盤</span>
           ${hasRecords ? `<label class="record-search">
-            <input id="record-search" type="search" value="${esc(state.recordQuery)}" placeholder="搜索姓名、標籤、備註或四柱" aria-label="搜索命例" autocomplete="off">
+            <input id="record-search" type="search" value="${esc(state.recordQuery)}" placeholder="搜索姓名、資料夾、標籤、備註或四柱" aria-label="搜索命例" autocomplete="off">
           </label>` : ''}
+          ${hasRecords ? `<div class="record-controls">
+            <label class="record-control"><span>資料夾</span>
+              <select id="record-folder-filter">${folderOptions}</select>
+            </label>
+            <label class="record-control"><span>排序</span>
+              <select id="record-sort">${sortOptions}</select>
+            </label>
+            ${duplicates.ids.size ? `<button class="chip-btn subtle ${state.recordDupOnly ? 'is-on' : ''}" type="button" data-action="filter-dup">只看重複 ${duplicates.ids.size}</button>` : ''}
+            <button class="chip-btn subtle ${state.recordSelect ? 'is-on' : ''}" type="button" data-action="toggle-select">${state.recordSelect ? '完成批次' : '批次管理'}</button>
+          </div>` : ''}
         </div>
         <div class="records-toolbar-actions">
           ${hasRecords && state.records.length + (state.chart ? 1 : 0) >= 2 ? `<a class="chip-btn" href="#/compare">${icon('spark', 15)} 雙盤合參</a>` : ''}
@@ -1950,11 +2095,13 @@ function renderRecords() {
           <a class="chip-btn" href="#/">${icon('plus', 15)} 新建排盤</a>
         </div>
       </div>
+      ${hasRecords ? batchBar : ''}
       ${tagList.length ? `<div class="records-tags reveal" role="group" aria-label="按標籤篩選">
         <button class="tag-chip ${state.recordTag ? '' : 'is-active'}" type="button" data-action="filter-tag" data-tag="">全部</button>
         ${tagList.map(({ tag, count }) => `<button class="tag-chip ${state.recordTag === tag ? 'is-active' : ''}" type="button" data-action="filter-tag" data-tag="${esc(tag)}">${esc(tag)}<i>${count}</i></button>`).join('')}
       </div>` : ''}
       <input type="file" id="records-import" accept="application/json,.json" hidden>
+      <datalist id="record-folders">${folders.map(({ name }) => `<option value="${esc(name)}"></option>`).join('')}</datalist>
       <p class="record-empty" id="record-empty" hidden>沒有匹配的命例。</p>
       ${hasRecords ? `<div class="record-grid">${cards}</div>` : `
         <div class="empty-state reveal">
@@ -1966,7 +2113,7 @@ function renderRecords() {
     </div>
   `;
   bindRecordTools();
-  if (state.recordQuery || state.recordTag) filterRecords(state.recordQuery);
+  filterRecords(state.recordQuery);
 }
 
 function saveRecordMeta(id) {
@@ -1980,6 +2127,7 @@ function saveRecordMeta(id) {
       .filter(Boolean),
   )].slice(0, 6);
   const note = form.querySelector('[name="note"]').value.trim().slice(0, 500);
+  const folder = form.querySelector('[name="folder"]').value.trim().slice(0, 20);
   state.records = loadRecords();
   const record = state.records.find((r) => r.id === id);
   if (!record) {
@@ -1988,6 +2136,7 @@ function saveRecordMeta(id) {
   }
   record.tags = tags;
   record.note = note;
+  record.folder = folder;
   if (!persistRecords()) {
     toast('瀏覽器存儲不可用，未能保存');
     return;
@@ -2000,15 +2149,20 @@ function filterRecords(query) {
   state.recordQuery = query;
   const needle = query.trim().toLowerCase();
   const tag = state.recordTag;
+  const folder = state.recordFolder;
+  const dupOnly = state.recordDupOnly;
   let visible = 0;
   document.querySelectorAll('.record-card').forEach((card) => {
     const textHit = !needle || (card.dataset.search || '').toLowerCase().includes(needle);
     const tagHit = !tag || (card.dataset.tags || '').split('|').includes(tag);
-    const hit = textHit && tagHit;
+    const cardFolder = card.dataset.folder || '';
+    const folderHit = !folder || (folder === '__none__' ? !cardFolder : cardFolder === folder);
+    const dupHit = !dupOnly || card.dataset.dup === '1';
+    const hit = textHit && tagHit && folderHit && dupHit;
     card.hidden = !hit;
     if (hit) visible += 1;
   });
-  const filtered = !!needle || !!tag;
+  const filtered = !!needle || !!tag || !!folder || dupOnly;
   const countEl = document.getElementById('record-count');
   if (countEl) {
     countEl.textContent = filtered
@@ -2032,6 +2186,24 @@ function bindRecordTools() {
       saveRecordMeta(form.dataset.editorFor);
     });
   });
+  const sort = document.getElementById('record-sort');
+  if (sort) {
+    sort.addEventListener('change', () => {
+      state.recordSort = sort.value;
+      saveRecordSort(sort.value);
+      renderRecords();
+    });
+  }
+  const folderFilter = document.getElementById('record-folder-filter');
+  if (folderFilter) {
+    folderFilter.addEventListener('change', () => {
+      state.recordFolder = folderFilter.value;
+      renderRecords();
+    });
+  }
+  document.querySelectorAll('[data-select-id]').forEach((box) => {
+    box.addEventListener('change', () => toggleRecordSelection(box.dataset.selectId));
+  });
   const fileInput = document.getElementById('records-import');
   if (fileInput) {
     fileInput.addEventListener('change', () => {
@@ -2040,6 +2212,70 @@ function bindRecordTools() {
       if (file) importRecords(file);
     });
   }
+}
+
+function toggleRecordSelection(id) {
+  const set = new Set(state.recordSelection);
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+  state.recordSelection = [...set];
+  updateBatchCount();
+}
+
+function updateBatchCount() {
+  const count = document.getElementById('batch-count');
+  if (count) count.textContent = `已選 ${state.recordSelection.length} 張`;
+  const del = document.querySelector('[data-action="batch-delete"]');
+  if (del && del.dataset.confirm === '1') {
+    del.dataset.confirm = '0';
+    del.textContent = '刪除所選';
+  }
+}
+
+function batchApply(updater, message) {
+  if (!state.recordSelection.length) {
+    toast('請先選擇命例');
+    return;
+  }
+  const ids = new Set(state.recordSelection);
+  state.records = loadRecords();
+  let changed = 0;
+  state.records.forEach((record) => {
+    if (!ids.has(record.id)) return;
+    updater(record);
+    changed += 1;
+  });
+  if (!persistRecords()) {
+    state.records = loadRecords();
+    toast('儲存空間不足，未能更新');
+    return;
+  }
+  state.recordSelection = [];
+  renderRecords();
+  toast(message(changed));
+}
+
+function batchMoveFolder() {
+  const folder = (document.getElementById('batch-folder')?.value || '').trim().slice(0, 20);
+  batchApply(
+    (record) => { record.folder = folder; },
+    (count) => (folder ? `已將 ${count} 張移至「${folder}」` : `已取消 ${count} 張的資料夾分類`),
+  );
+}
+
+function batchAddTag() {
+  const raw = document.getElementById('batch-tag')?.value || '';
+  const tags = [...new Set(
+    raw.split(/[、,，\s]+/).map((tag) => tag.trim()).filter(Boolean),
+  )].slice(0, 6);
+  if (!tags.length) {
+    toast('請先輸入標籤');
+    return;
+  }
+  batchApply(
+    (record) => { record.tags = [...new Set([...(record.tags || []), ...tags])].slice(0, 6); },
+    (count) => `已為 ${count} 張加入標籤`,
+  );
 }
 
 function normalizeImportedInput(raw) {
@@ -2127,6 +2363,7 @@ async function importRecords(file) {
   const seen = new Set(state.records.map((record) => record.id));
   const additions = [];
   let skipped = 0;
+  let sameBirth = 0;
   for (const item of items) {
     const input = normalizeImportedInput(item?.input ?? item);
     if (!input) {
@@ -2142,8 +2379,13 @@ async function importRecords(file) {
     const stamp = typeof item?.createdAt === 'string' && !Number.isNaN(Date.parse(item.createdAt))
       ? new Date(item.createdAt).toISOString()
       : new Date().toISOString();
-    const meta = upgradeRecord({ input, tags: item?.tags, note: item?.note });
-    additions.push({ id, input, createdAt: stamp, tags: meta.tags, note: meta.note });
+    const meta = upgradeRecord({ input, tags: item?.tags, note: item?.note, folder: item?.folder });
+    const key = birthKey(input);
+    if (state.records.some((record) => birthKey(record.input) === key)
+      || additions.some((record) => birthKey(record.input) === key)) {
+      sameBirth += 1;
+    }
+    additions.push({ id, input, createdAt: stamp, tags: meta.tags, note: meta.note, folder: meta.folder });
   }
   if (!additions.length) {
     toast(`沒有新增命例${skipped ? `，跳過 ${skipped} 條` : ''}`);
@@ -2162,7 +2404,7 @@ async function importRecords(file) {
   }
   state.recordQuery = '';
   renderRecords();
-  toast(`已導入 ${additions.length} 張命例${skipped ? `，跳過 ${skipped} 條` : ''}`);
+  toast(`已導入 ${additions.length} 張命例${skipped ? `，跳過 ${skipped} 條` : ''}${sameBirth ? `，其中 ${sameBirth} 張出生資料重複` : ''}`);
 }
 
 // ---- Learn ----
@@ -2308,19 +2550,24 @@ function saveCurrent() {
     toast(`命例已達 ${MAX_RECORDS} 張，請先匯出備份並刪除部分`);
     return;
   }
+  const key = birthKey(input);
+  const twin = state.records.find((record) => birthKey(record.input) === key);
   state.records.unshift({
     id,
     input,
     createdAt: new Date().toISOString(),
     tags: [],
     note: '',
+    folder: '',
   });
   if (!persistRecords()) {
     state.records = loadRecords();
     toast('儲存空間不足，未能保存；請先匯出備份');
     return;
   }
-  toast('已保存到命例');
+  toast(twin
+    ? `已保存；與「${twin.input.name || '未具名'}」出生資料相同`
+    : '已保存到命例');
 }
 
 function shareCurrent() {
@@ -2613,6 +2860,64 @@ function handleAction(action, target) {
       renderRecords();
       break;
     }
+    case 'filter-dup': {
+      state.recordDupOnly = !state.recordDupOnly;
+      renderRecords();
+      break;
+    }
+    case 'toggle-select': {
+      state.recordSelect = !state.recordSelect;
+      if (!state.recordSelect) state.recordSelection = [];
+      renderRecords();
+      break;
+    }
+    case 'select-visible': {
+      const ids = [...document.querySelectorAll('.record-card:not([hidden])')].map((card) => card.dataset.recordId);
+      const set = new Set(state.recordSelection);
+      const allSelected = ids.length > 0 && ids.every((id) => set.has(id));
+      ids.forEach((id) => {
+        if (allSelected) set.delete(id);
+        else set.add(id);
+      });
+      state.recordSelection = [...set];
+      renderRecords();
+      break;
+    }
+    case 'clear-selection': {
+      state.recordSelection = [];
+      renderRecords();
+      break;
+    }
+    case 'batch-folder': batchMoveFolder(); break;
+    case 'batch-tag': batchAddTag(); break;
+    case 'batch-delete': {
+      if (!state.recordSelection.length) {
+        toast('請先選擇命例');
+        break;
+      }
+      if (target.dataset.confirm !== '1') {
+        target.dataset.confirm = '1';
+        target.textContent = `確認刪除 ${state.recordSelection.length} 張`;
+        setTimeout(() => {
+          if (target.isConnected && target.dataset.confirm === '1') {
+            target.dataset.confirm = '0';
+            target.textContent = '刪除所選';
+          }
+        }, 3000);
+        break;
+      }
+      const ids = new Set(state.recordSelection);
+      state.records = loadRecords().filter((record) => !ids.has(record.id));
+      if (!persistRecords()) {
+        state.records = loadRecords();
+        toast('儲存空間不足，未能刪除');
+        break;
+      }
+      state.recordSelection = [];
+      renderRecords();
+      toast(`已刪除 ${ids.size} 張命例`);
+      break;
+    }
     default: break;
   }
 }
@@ -2685,7 +2990,14 @@ document.addEventListener('click', (event) => {
   }
   const recordCard = event.target.closest('.record-card');
   if (recordCard && !event.target.closest('button, input, textarea, label, form')) {
-    openRecord(recordCard.dataset.recordId);
+    if (state.recordSelect) {
+      const id = recordCard.dataset.recordId;
+      toggleRecordSelection(id);
+      const box = recordCard.querySelector('[data-select-id]');
+      if (box) box.checked = state.recordSelection.includes(id);
+    } else {
+      openRecord(recordCard.dataset.recordId);
+    }
   }
 });
 
@@ -2705,6 +3017,7 @@ window.addEventListener('resize', () => closeTerm());
 
 initTheme();
 state.records = loadRecords();
+state.recordSort = loadRecordSort();
 route();
 
 function setupServiceWorker() {
