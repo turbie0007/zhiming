@@ -1,16 +1,16 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES,
   LUNAR_DAYS, GENDER_LABEL,
-} from './data.js?v=20261142';
+} from './data.js?v=20261143';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261142';
+} from './bazi.js?v=20261143';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
-} from './astro.js?v=20261142';
-import { ARTICLES } from './learn.js?v=20261142';
-import { GLOSSARY } from './glossary.js?v=20261142';
+} from './astro.js?v=20261143';
+import { ARTICLES } from './learn.js?v=20261143';
+import { GLOSSARY } from './glossary.js?v=20261143';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -3021,6 +3021,7 @@ state.recordSort = loadRecordSort();
 route();
 
 function setupServiceWorker() {
+  if (window.Capacitor?.isNativePlatform?.()) return;
   if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
   const banner = document.getElementById('update-banner');
   const reloadBtn = banner?.querySelector('[data-update-action="reload"]');
