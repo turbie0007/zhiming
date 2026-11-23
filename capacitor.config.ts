@@ -5,17 +5,19 @@ const config: CapacitorConfig = {
   appName: '知命',
   webDir: 'www',
   ios: {
-    contentInset: 'always',
+    contentInset: 'never',
     backgroundColor: '#F4EFE4',
   },
   android: {
     backgroundColor: '#F4EFE4',
   },
   plugins: {
+    SystemBars: {
+      insetsHandling: 'disable',
+    },
     StatusBar: {
       style: 'DEFAULT',
-      backgroundColor: '#F4EFE4',
-      overlaysWebView: false,
+      overlaysWebView: true,
     },
   },
 };

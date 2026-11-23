@@ -69,3 +69,8 @@ export async function cancelNotifications(ids) {
     // Notification state is best-effort; a cleared schedule is harmless.
   }
 }
+
+export function syncStatusBar(dark) {
+  if (!bridge()) return;
+  call('StatusBar', 'setStyle', { style: dark ? 'DARK' : 'LIGHT' }).catch(() => {});
+}

@@ -1,5 +1,37 @@
 apply plugin: 'com.android.application'
 
+def unsignedRelease = providers.gradleProperty('zhimingUnsignedRelease').orNull == 'true'
+def signingValues = ['ZHIMING_KEYSTORE_FILE', 'ZHIMING_KEYSTORE_PASSWORD',
+                     'ZHIMING_KEY_ALIAS', 'ZHIMING_KEY_PASSWORD'].collectEntries {
+    [(it): providers.environmentVariable(it).orNull]
+}
+def hasReleaseSigning = signingValues.values().every { it != null && !it.isEmpty() }
+
+def checkReleaseSigning = tasks.register('checkReleaseSigning') {
+    doLast {
+        if (unsignedRelease) {
+            logger.lifecycle('UNSIGNED verification build: not suitable for Google Play upload.')
+        } else {
+            if (!hasReleaseSigning) {
+                throw new GradleException('Release signing requires ZHIMING_KEYSTORE_FILE, ZHIMING_KEYSTORE_PASSWORD, ZHIMING_KEY_ALIAS and ZHIMING_KEY_PASSWORD. Use -PzhimingUnsignedRelease=true only for local verification.')
+            }
+            def keyFile = new File(signingValues.ZHIMING_KEYSTORE_FILE)
+            if (!keyFile.isAbsolute() || !keyFile.isFile()) {
+                throw new GradleException('ZHIMING_KEYSTORE_FILE must be an existing absolute file path.')
+            }
+            if (keyFile.canonicalFile.toPath().startsWith(rootProject.projectDir.parentFile.canonicalFile.toPath())) {
+                throw new GradleException('Keep the release keystore outside this repository.')
+            }
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == 'preReleaseBuild' || name == 'validateSigningRelease') {
+        dependsOn(checkReleaseSigning)
+    }
+}
+
 android {
     namespace = "top.turbie.zhiming"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,7 +39,7 @@ android {
         applicationId "top.turbie.zhiming"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 2
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -16,8 +48,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning && !unsignedRelease) {
+            release {
+                storeFile file(signingValues.ZHIMING_KEYSTORE_FILE)
+                storePassword signingValues.ZHIMING_KEYSTORE_PASSWORD
+                keyAlias signingValues.ZHIMING_KEY_ALIAS
+                keyPassword signingValues.ZHIMING_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning && !unsignedRelease) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

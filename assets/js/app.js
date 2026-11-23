@@ -1,21 +1,21 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261145';
+} from './data.js?v=20261147';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261145';
+} from './bazi.js?v=20261147';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261145';
+} from './astro.js?v=20261147';
 import {
   isNative, haptic, shareNative, notificationPermission,
-  requestNotificationPermission, scheduleNotifications, cancelNotifications,
-} from './native.js?v=20261145';
-import { ARTICLES } from './learn.js?v=20261145';
-import { GLOSSARY } from './glossary.js?v=20261145';
+  requestNotificationPermission, scheduleNotifications, cancelNotifications, syncStatusBar,
+} from './native.js?v=20261147';
+import { ARTICLES } from './learn.js?v=20261147';
+import { GLOSSARY } from './glossary.js?v=20261147';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -257,6 +257,7 @@ function applyTheme(theme) {
   }
   const themeColor = document.querySelector('meta[name="theme-color"]');
   if (themeColor) themeColor.content = theme === 'dark' ? '#14120E' : '#F4EFE4';
+  syncStatusBar(theme === 'dark');
   document.querySelectorAll('[data-theme-icon]').forEach((el) => {
     el.innerHTML = theme === 'dark' ? icon('sun', 18) : icon('moon', 18);
   });

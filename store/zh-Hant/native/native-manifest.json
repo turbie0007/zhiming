@@ -1,0 +1,418 @@
+{
+  "status": "native-simulator-capture",
+  "note": "Captured on iOS Simulator and Android emulator with fictional fixtures. Simulator captures are store-usable; physical-device QA (widgets, notifications, sharing) remains pending.",
+  "capturedWith": "scripts/native-qa/capture.mjs",
+  "appVersion": "1.0.0",
+  "nativeBuild": 2,
+  "webVersion": "20261147",
+  "bundleId": "top.turbie.zhiming",
+  "devices": {
+    "ios-iphone": {
+      "platform": "ios",
+      "device": "Zhiming-QA-iPhone",
+      "runtime": "iOS-27-2",
+      "state": "Booted",
+      "capturedAt": "2026-11-23T13:36:36.798Z",
+      "screenshots": [
+        {
+          "scene": "01-chart",
+          "file": "native/ios-iphone/01-chart.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "01-chart",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "02-structure",
+          "file": "native/ios-iphone/02-structure.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "02-structure",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.structure-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "03-luck",
+          "file": "native/ios-iphone/03-luck.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "03-luck",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "click:[data-luck-index=\"3\"]",
+              "centerX:[data-luck-index=\"3\"]",
+              "align:.luck-panel"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "04-records",
+          "file": "native/ios-iphone/04-records.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "04-records",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/records",
+              "wait:.record-card",
+              "align:.records-tags"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/records",
+            "title": "知命 · 命例"
+          }
+        },
+        {
+          "scene": "05-learn",
+          "file": "native/ios-iphone/05-learn.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "05-learn",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/learn",
+              "wait:.learn-layout",
+              "align:.articles"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/learn",
+            "title": "知命 · 學堂"
+          }
+        },
+        {
+          "scene": "06-dark",
+          "file": "native/ios-iphone/06-dark.png",
+          "width": 1206,
+          "height": 2622,
+          "summary": {
+            "scene": "06-dark",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "theme:dark",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "dark",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        }
+      ]
+    },
+    "android-phone": {
+      "platform": "android",
+      "device": "sdk_gphone64_arm64",
+      "os": "Android 16 (API 36)",
+      "capturedAt": "2026-11-23T13:55:59.843Z",
+      "screenshots": [
+        {
+          "scene": "01-chart",
+          "file": "native/android-phone/01-chart.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "01-chart",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "https://localhost/#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "02-structure",
+          "file": "native/android-phone/02-structure.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "02-structure",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.structure-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "https://localhost/#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "03-luck",
+          "file": "native/android-phone/03-luck.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "03-luck",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "click:[data-luck-index=\"3\"]",
+              "centerX:[data-luck-index=\"3\"]",
+              "align:.luck-panel"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "https://localhost/#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "04-records",
+          "file": "native/android-phone/04-records.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "04-records",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/records",
+              "wait:.record-card",
+              "align:.records-tags"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "https://localhost/#/records",
+            "title": "知命 · 命例"
+          }
+        },
+        {
+          "scene": "05-learn",
+          "file": "native/android-phone/05-learn.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "05-learn",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/learn",
+              "wait:.learn-layout",
+              "align:.articles"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "https://localhost/#/learn",
+            "title": "知命 · 學堂"
+          }
+        },
+        {
+          "scene": "06-dark",
+          "file": "native/android-phone/06-dark.png",
+          "width": 1080,
+          "height": 2340,
+          "summary": {
+            "scene": "06-dark",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "theme:dark",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "dark",
+            "href": "https://localhost/#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        }
+      ]
+    },
+    "ios-ipad": {
+      "platform": "ios",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "iOS-27-2",
+      "state": "Booted",
+      "capturedAt": "2026-11-23T13:37:09.885Z",
+      "screenshots": [
+        {
+          "scene": "01-chart",
+          "file": "native/ios-ipad/01-chart.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "01-chart",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "02-structure",
+          "file": "native/ios-ipad/02-structure.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "02-structure",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "align:.structure-card"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "03-luck",
+          "file": "native/ios-ipad/03-luck.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "03-luck",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "click:[data-luck-index=\"3\"]",
+              "centerX:[data-luck-index=\"3\"]",
+              "align:.luck-panel"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        },
+        {
+          "scene": "04-records",
+          "file": "native/ios-ipad/04-records.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "04-records",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/records",
+              "wait:.record-card",
+              "align:.records-tags"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/records",
+            "title": "知命 · 命例"
+          }
+        },
+        {
+          "scene": "05-learn",
+          "file": "native/ios-ipad/05-learn.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "05-learn",
+            "steps": [
+              "theme:light",
+              "wait:#chart-form",
+              "hash:#/learn",
+              "wait:.learn-layout",
+              "align:.articles"
+            ],
+            "overflow": false,
+            "theme": "light",
+            "href": "capacitor://localhost#/learn",
+            "title": "知命 · 學堂"
+          }
+        },
+        {
+          "scene": "06-dark",
+          "file": "native/ios-ipad/06-dark.png",
+          "width": 2064,
+          "height": 2752,
+          "summary": {
+            "scene": "06-dark",
+            "steps": [
+              "theme:light",
+              "click:[data-action=\"sample\"]",
+              "fill:[\"#f-name\",\"示例甲\"]",
+              "submit:#chart-form",
+              "wait:.chart-card",
+              "theme:dark",
+              "align:.chart-card"
+            ],
+            "overflow": false,
+            "theme": "dark",
+            "href": "capacitor://localhost#/chart",
+            "title": "知命 · 示例甲的命盤"
+          }
+        }
+      ]
+    }
+  }
+}

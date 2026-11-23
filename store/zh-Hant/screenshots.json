@@ -1,0 +1,272 @@
+{
+  "locale": "zh-Hant",
+  "status": "browser-draft-not-for-submission",
+  "sourceType": "Chrome responsive web capture, not native iOS or Android",
+  "capturedAt": "2026-11-23T12:07:53.725Z",
+  "appVersion": "1.0.0",
+  "nativeBuild": 2,
+  "webVersion": "20261147",
+  "demoData": "All names, birth inputs, notes and records are fictional fixtures in an isolated browser profile.",
+  "limitations": [
+    "No native status bars, safe-area insets, platform fonts or system dialogs are represented.",
+    "Replace raw captures with real app captures and recheck layout before submission.",
+    "Native widgets, notifications and sharing are not simulated."
+  ],
+  "sources": {
+    "index.html": "0c7d8bfa73666e4df0660d59aaad2cf2b0502f828eb6784a84b46e7cff848f54",
+    "assets/js/app.js": "3fbcc0fc3b65468956a5d8432150406dab8a04e3a0fa91e16139ef9f461f4e1f",
+    "assets/css/style.css": "31e6cf388bfda5250a3ba55eb73510cad931b1b4ac28de2332384ca3d89d6d3b",
+    "sw.js": "7f60428fcae559b7f7a5cb469c5c866c6445a0e12c2901f24e6da6b71af697a7"
+  },
+  "formats": [
+    {
+      "id": "app-store-iphone",
+      "label": "App Store · iPhone",
+      "width": 1206,
+      "height": 2622,
+      "vw": 402,
+      "vh": 770,
+      "scale": 3
+    },
+    {
+      "id": "google-play-phone",
+      "label": "Google Play · 手機",
+      "width": 1080,
+      "height": 1920,
+      "vw": 360,
+      "vh": 570,
+      "scale": 3
+    },
+    {
+      "id": "app-store-ipad",
+      "label": "App Store · iPad 13 吋",
+      "width": 2064,
+      "height": 2752,
+      "vw": 1032,
+      "vh": 1160,
+      "scale": 2
+    }
+  ],
+  "scenes": [
+    {
+      "id": "01-chart",
+      "title": "一紙八字，清楚展開",
+      "subtitle": "四柱、十神與藏干，逐層閱讀",
+      "alt": "知命四柱八字詳盤，顯示天干、地支、十神與藏干，資料為虛構示例。",
+      "selector": ".chart-card"
+    },
+    {
+      "id": "02-structure",
+      "title": "看見取格的依據",
+      "subtitle": "格局與用神，附上規則與理由",
+      "alt": "格局與用神卡片，列出取格理由與用神候選，僅供傳統文化研習。",
+      "selector": ".structure-card"
+    },
+    {
+      "id": "03-luck",
+      "title": "循著時序，逐層研習",
+      "subtitle": "大運、流年，再看流月與流日",
+      "alt": "大運與流年操作區，可切換十年大運並查看各年干支。",
+      "selector": ".luck-panel"
+    },
+    {
+      "id": "04-records",
+      "title": "把每次研習，留下來",
+      "subtitle": "命例、標籤與備註，整齊收藏",
+      "alt": "命例管理頁，使用虛構示例展示資料夾、標籤、備註與搜尋功能。",
+      "hash": "#/records",
+      "ready": "document.querySelector('.record-card')"
+    },
+    {
+      "id": "05-learn",
+      "title": "從名詞，讀懂脈絡",
+      "subtitle": "在學堂，一步步認識四柱",
+      "alt": "知命學堂，以文章卡片介紹四柱八字相關概念。",
+      "hash": "#/learn",
+      "ready": "document.querySelector('.learn-layout')"
+    },
+    {
+      "id": "06-dark",
+      "title": "入夜，也能安靜閱讀",
+      "subtitle": "深淺主題切換，閱讀各有所適",
+      "alt": "知命四柱詳盤的深色主題，以不同顏色區分五行。",
+      "selector": ".chart-card",
+      "dark": true
+    }
+  ],
+  "screenshots": [
+    {
+      "format": "app-store-iphone",
+      "scene": "01-chart",
+      "raw": "browser-drafts/raw/app-store-iphone/01-chart.png",
+      "poster": "browser-drafts/app-store-iphone/01-chart.png",
+      "alt": "知命四柱八字詳盤，顯示天干、地支、十神與藏干，資料為虛構示例。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "app-store-iphone",
+      "scene": "02-structure",
+      "raw": "browser-drafts/raw/app-store-iphone/02-structure.png",
+      "poster": "browser-drafts/app-store-iphone/02-structure.png",
+      "alt": "格局與用神卡片，列出取格理由與用神候選，僅供傳統文化研習。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "app-store-iphone",
+      "scene": "03-luck",
+      "raw": "browser-drafts/raw/app-store-iphone/03-luck.png",
+      "poster": "browser-drafts/app-store-iphone/03-luck.png",
+      "alt": "大運與流年操作區，可切換十年大運並查看各年干支。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "app-store-iphone",
+      "scene": "04-records",
+      "raw": "browser-drafts/raw/app-store-iphone/04-records.png",
+      "poster": "browser-drafts/app-store-iphone/04-records.png",
+      "alt": "命例管理頁，使用虛構示例展示資料夾、標籤、備註與搜尋功能。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "app-store-iphone",
+      "scene": "05-learn",
+      "raw": "browser-drafts/raw/app-store-iphone/05-learn.png",
+      "poster": "browser-drafts/app-store-iphone/05-learn.png",
+      "alt": "知命學堂，以文章卡片介紹四柱八字相關概念。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "app-store-iphone",
+      "scene": "06-dark",
+      "raw": "browser-drafts/raw/app-store-iphone/06-dark.png",
+      "poster": "browser-drafts/app-store-iphone/06-dark.png",
+      "alt": "知命四柱詳盤的深色主題，以不同顏色區分五行。",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "01-chart",
+      "raw": "browser-drafts/raw/google-play-phone/01-chart.png",
+      "poster": "browser-drafts/google-play-phone/01-chart.png",
+      "alt": "知命四柱八字詳盤，顯示天干、地支、十神與藏干，資料為虛構示例。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "02-structure",
+      "raw": "browser-drafts/raw/google-play-phone/02-structure.png",
+      "poster": "browser-drafts/google-play-phone/02-structure.png",
+      "alt": "格局與用神卡片，列出取格理由與用神候選，僅供傳統文化研習。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "03-luck",
+      "raw": "browser-drafts/raw/google-play-phone/03-luck.png",
+      "poster": "browser-drafts/google-play-phone/03-luck.png",
+      "alt": "大運與流年操作區，可切換十年大運並查看各年干支。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "04-records",
+      "raw": "browser-drafts/raw/google-play-phone/04-records.png",
+      "poster": "browser-drafts/google-play-phone/04-records.png",
+      "alt": "命例管理頁，使用虛構示例展示資料夾、標籤、備註與搜尋功能。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "05-learn",
+      "raw": "browser-drafts/raw/google-play-phone/05-learn.png",
+      "poster": "browser-drafts/google-play-phone/05-learn.png",
+      "alt": "知命學堂，以文章卡片介紹四柱八字相關概念。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "google-play-phone",
+      "scene": "06-dark",
+      "raw": "browser-drafts/raw/google-play-phone/06-dark.png",
+      "poster": "browser-drafts/google-play-phone/06-dark.png",
+      "alt": "知命四柱詳盤的深色主題，以不同顏色區分五行。",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "01-chart",
+      "raw": "browser-drafts/raw/app-store-ipad/01-chart.png",
+      "poster": "browser-drafts/app-store-ipad/01-chart.png",
+      "alt": "知命四柱八字詳盤，顯示天干、地支、十神與藏干，資料為虛構示例。",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "02-structure",
+      "raw": "browser-drafts/raw/app-store-ipad/02-structure.png",
+      "poster": "browser-drafts/app-store-ipad/02-structure.png",
+      "alt": "格局與用神卡片，列出取格理由與用神候選，僅供傳統文化研習。",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "03-luck",
+      "raw": "browser-drafts/raw/app-store-ipad/03-luck.png",
+      "poster": "browser-drafts/app-store-ipad/03-luck.png",
+      "alt": "大運與流年操作區，可切換十年大運並查看各年干支。",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "04-records",
+      "raw": "browser-drafts/raw/app-store-ipad/04-records.png",
+      "poster": "browser-drafts/app-store-ipad/04-records.png",
+      "alt": "命例管理頁，使用虛構示例展示資料夾、標籤、備註與搜尋功能。",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "05-learn",
+      "raw": "browser-drafts/raw/app-store-ipad/05-learn.png",
+      "poster": "browser-drafts/app-store-ipad/05-learn.png",
+      "alt": "知命學堂，以文章卡片介紹四柱八字相關概念。",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "format": "app-store-ipad",
+      "scene": "06-dark",
+      "raw": "browser-drafts/raw/app-store-ipad/06-dark.png",
+      "poster": "browser-drafts/app-store-ipad/06-dark.png",
+      "alt": "知命四柱詳盤的深色主題，以不同顏色區分五行。",
+      "width": 2064,
+      "height": 2752
+    }
+  ],
+  "checks": [
+    "命例搜尋無結果：不顯示命例卡片",
+    "雙盤合參：兩張虛構命例可並列",
+    "時辰未知：出現估算與略去時柱提示",
+    "已載入後斷網：學堂與排盤路由仍可操作",
+    "18 個畫面無整頁水平溢出；無 JavaScript 未捕捉例外"
+  ],
+  "references": [
+    "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications",
+    "https://support.google.com/googleplay/android-developer/answer/9866151"
+  ]
+}

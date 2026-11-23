@@ -1,8 +1,8 @@
-import { SOLAR_TERMS, TERMS_START_YEAR } from './solar-terms.js?v=20261145';
+import { SOLAR_TERMS, TERMS_START_YEAR } from './solar-terms.js?v=20261147';
 import {
   STEMS, BRANCHES, LUNAR_INFO, LUNAR_MONTHS, LUNAR_DAYS,
   LUNAR_MIN_YEAR, LUNAR_MAX_YEAR, JIE_MAP, TERM_NAMES,
-} from './data.js?v=20261145';
+} from './data.js?v=20261147';
 
 const DAY_MS = 86400000;
 
