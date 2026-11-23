@@ -2,7 +2,7 @@
 
 更新日期：2026-11-23
 目前版本：1.0.0（網頁快取版號 20261145）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具（iOS WidgetKit、Android App Widget）；尚未送審。
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；尚未送審。
 
 ## 產品原則
 
@@ -18,7 +18,7 @@
 | 項目 | 說明 | 影響 |
 | --- | --- | --- |
 | Apple 4.2 原生功能 | 桌面小工具、節氣／流日通知、分享、觸覺回饋 | 避免退件，最高優先（四項均已完成；小工具提供今日干支、農曆與生肖） |
-| 隱私合規 | `PrivacyInfo.xcprivacy`、隱私政策頁、Android Data Safety | 送審必要（隱私清單與政策頁已完成；Data Safety 表單待填） |
+| 隱私合規 | `PrivacyInfo.xcprivacy`、隱私政策頁、Android Data Safety | 送審必要（清單與政策頁已完成；兩商店申報答案見 `PRIVACY-DECLARATIONS.md`，待公開政策網址後填入主控台） |
 | 簽署與發布 | Android release keystore＋AAB；iOS Archive／TestFlight | 上架必要 |
 | 實機 QA | iPhone／Android 各一輪，含離線、背景、旋轉 | 降低負評 |
 | 商店素材 | 截圖、文案、關鍵字、App 圖示 | 轉換率 |
