@@ -1,5 +1,5 @@
 {
-  "_comment": "佈署前把 url 填成正式網域（例如 https://example.com），再執行 npm run build:web。留空時建置會跳過 canonical、JSON-LD、og:url 與 sitemap.xml。basePath 用於子目錄佈署。",
-  "url": "",
-  "basePath": "/"
+  "_comment": "GitHub Pages 專案頁：url 為帳號 Pages 根、basePath 為 repo 名。綁自訂網域後把 url 換成該網域、basePath 改 \"/\"，再執行 npm run build:web。留空 url 會跳過 canonical、JSON-LD、og:url 與 sitemap.xml。",
+  "url": "https://turbie0007.github.io",
+  "basePath": "/zhiming"
 }
