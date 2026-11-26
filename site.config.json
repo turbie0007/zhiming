@@ -1,5 +1,5 @@
 {
-  "_comment": "GitHub Pages 專案頁：url 為帳號 Pages 根、basePath 為 repo 名。綁自訂網域後把 url 換成該網域、basePath 改 \"/\"，再執行 npm run build:web。留空 url 會跳過 canonical、JSON-LD、og:url 與 sitemap.xml。",
-  "url": "https://turbie0007.github.io",
-  "basePath": "/zhiming"
+  "_comment": "自訂網域 www.myzhiming.com：url 為正式站台根、basePath 為 \"/\"。改網域後執行 npm run build:web 重建 canonical／sitemap／og。留空 url 會跳過 canonical、JSON-LD、og:url 與 sitemap.xml。",
+  "url": "https://www.myzhiming.com",
+  "basePath": "/"
 }

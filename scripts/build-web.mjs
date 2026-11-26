@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BRAND, NOINDEX_PATHS, OG_IMAGE, PAGES, notFoundMarkup } from '../assets/js/pages.js';
@@ -98,6 +98,7 @@ mkdirSync(out, { recursive: true });
 for (const entry of ['manifest.webmanifest', 'sw.js', 'tests.html', 'assets']) {
   cpSync(join(root, entry), join(out, entry), { recursive: true });
 }
+if (existsSync(join(root, 'CNAME'))) cpSync(join(root, 'CNAME'), join(out, 'CNAME'));
 
 const today = todayOverview();
 const homeContext = {
