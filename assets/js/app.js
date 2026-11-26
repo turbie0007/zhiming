@@ -1,21 +1,23 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261147';
+} from './data.js?v=20261149';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261147';
+} from './bazi.js?v=20261149';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261147';
+} from './astro.js?v=20261149';
 import {
   isNative, haptic, shareNative, notificationPermission,
   requestNotificationPermission, scheduleNotifications, cancelNotifications, syncStatusBar,
-} from './native.js?v=20261147';
-import { ARTICLES } from './learn.js?v=20261147';
-import { GLOSSARY } from './glossary.js?v=20261147';
+} from './native.js?v=20261149';
+import { ARTICLES } from './learn.js?v=20261149';
+import { GLOSSARY } from './glossary.js?v=20261149';
+import { esc, icon } from './ui.js?v=20261149';
+import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261149';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -72,42 +74,6 @@ const state = {
 };
 
 const app = document.getElementById('app');
-
-const ICONS = {
-  arrowLeft: '<path d="M15 18l-6-6 6-6"/>',
-  arrowRight: '<path d="M9 18l6-6-6-6"/>',
-  save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
-  link: '<path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/>',
-  print: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
-  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
-  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-  trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
-  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
-  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 8l5-5 5 5"/><path d="M12 3v12"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
-  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>',
-  compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>',
-  bookmark: '<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/>',
-  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
-  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
-  spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/>',
-  check: '<path d="m20 6-11 11-5-5"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  chevron: '<path d="m6 9 6 6 6-6"/>',
-  x: '<path d="M18 6 6 18M6 6l12 12"/>',
-  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
-};
-
-function icon(name, size = 18) {
-  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
-}
-
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[ch]));
-}
 
 function termTag(term, className = '') {
   const known = Boolean(GLOSSARY[term]);
@@ -184,7 +150,7 @@ function openTerm(term, anchor) {
     <button class="term-pop-close" type="button" aria-label="關閉">${icon('x', 14)}</button>
     <h3 id="term-pop-title">${esc(term)}</h3>
     <p>${esc(info.text)}</p>
-    ${article ? `<a class="term-more" href="#article-${article.id}">學堂：${esc(article.title)} ${icon('arrowRight', 12)}</a>` : ''}
+    ${article ? `<a class="term-more" href="${linkFor('/learn/' + article.id)}">學堂：${esc(article.title)} ${icon('arrowRight', 12)}</a>` : ''}
   `;
   pop.hidden = false;
   termAnchor = anchor;
@@ -434,22 +400,142 @@ function inputSignature(input) {
 
 // ---- Router ----
 
-function navigate(hash) {
-  if (location.hash === hash) {
-    route();
-  } else {
-    location.hash = hash;
+// Native builds load the bundle from capacitor://localhost, and app-state routes have no
+// prerendered file to fall back on, so both keep hash routing; only hosted content pages
+// get real paths, which is what makes them individually crawlable.
+const BASE = (document.querySelector('meta[name="app-base"]')?.content || '/').replace(/([^/])$/, '$1/');
+const isHosted = () => !isNative();
+const PATH_ROUTES = new Set(PAGES.map((page) => page.path));
+
+function linkFor(path) {
+  if (!isHosted() || !PATH_ROUTES.has(path)) return `#${path}`;
+  if (path === '/') return BASE;
+  return `${BASE}${path.slice(1)}/`;
+}
+
+function normalizePath(raw) {
+  const trimmed = raw.replace(/index\.html$/, '').replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
+}
+
+function currentPath() {
+  const hash = location.hash;
+  if (hash && hash.length > 1) {
+    const fromHash = hash.startsWith('#/') ? hash.slice(1) : `/${hash.slice(1)}`;
+    if (fromHash.startsWith('/article-')) return normalizePath(`/learn/${fromHash.slice('/article-'.length)}`);
+    return normalizePath(fromHash);
   }
+  if (!isHosted()) return '/';
+  const pathname = BASE !== '/' && location.pathname.startsWith(BASE)
+    ? `/${location.pathname.slice(BASE.length)}`
+    : location.pathname;
+  return normalizePath(pathname);
+}
+
+function navigate(path) {
+  const target = linkFor(path);
+  if (!isHosted()) {
+    if (location.hash === target) route();
+    else location.hash = target;
+    return;
+  }
+  // App-state routes have no prerendered file: anchor them to the app root so a pushed
+  // URL reads /#/records rather than /learn/jieqi/#/records.
+  const url = target.startsWith('#') ? `${BASE}${target}` : target;
+  if (location.pathname + location.hash === url) {
+    route();
+    return;
+  }
+  history.pushState({}, '', url);
+  route();
+}
+
+const metaKey = (event) => event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
+
+// Prerendered pages ship real-path hrefs, which the native shell cannot resolve, so both
+// forms are funnelled through navigate() and each platform picks its own URL style.
+document.addEventListener('click', (event) => {
+  if (event.defaultPrevented || event.button !== 0 || metaKey(event)) return;
+  const anchor = event.target.closest('a[href]');
+  if (!anchor || anchor.target) return;
+  const href = anchor.getAttribute('href');
+  if (href.startsWith('#') || !href.startsWith(BASE) || href.endsWith('.html')) return;
+  event.preventDefault();
+  navigate(normalizePath(`/${href.slice(BASE.length)}`));
+});
+
+const HEAD_BY_PATH = new Map(PAGES.map((page) => [page.path, page]));
+
+function setMetaTag(attr, key, value) {
+  let tag = document.querySelector(`meta[${attr}="${key}"]`);
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.setAttribute(attr, key);
+    document.head.append(tag);
+  }
+  tag.content = value;
+}
+
+function setLinkTag(rel, href) {
+  let tag = document.querySelector(`link[rel="${rel}"]`);
+  if (!tag) {
+    tag = document.createElement('link');
+    tag.rel = rel;
+    document.head.append(tag);
+  }
+  tag.href = href;
+}
+
+function setJsonLd(page) {
+  document.getElementById('page-jsonld')?.remove();
+  if (!page.jsonLd) return;
+  const absoluteLink = (path) => location.origin + linkFor(path);
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = 'page-jsonld';
+  script.textContent = JSON.stringify(page.jsonLd({
+    homeUrl: absoluteLink('/'),
+    absoluteUrl: absoluteLink(page.path),
+    absoluteLink,
+  })).replace(/</g, '\\u003c');
+  document.head.append(script);
+}
+
+function setHead(page) {
+  document.title = page.title;
+  setMetaTag('name', 'description', page.description);
+  const noindex = page.robots === 'noindex';
+  setMetaTag('name', 'robots', page.robots || 'index,follow');
+  setMetaTag('property', 'og:type', page.ogType || 'website');
+  setMetaTag('property', 'og:title', page.title);
+  setMetaTag('property', 'og:description', page.description);
+  setMetaTag('name', 'twitter:title', page.title);
+  setMetaTag('name', 'twitter:description', page.description);
+  if (noindex) {
+    document.querySelector('link[rel="canonical"]')?.remove();
+    setMetaTag('property', 'og:url', '');
+    return;
+  }
+  const absoluteUrl = location.origin + linkFor(page.path);
+  setMetaTag('property', 'og:url', absoluteUrl);
+  setLinkTag('canonical', absoluteUrl);
+  setJsonLd(page);
+}
+
+// Routes that only ever show this device's own data stay out of the index.
+function setAppHead(title, description) {
+  setHead({ path: currentPath(), title, description, robots: 'noindex' });
 }
 
 function route(options = {}) {
-  const hash = location.hash || '#/';
-  const path = hash.slice(1) || '/';
+  const path = currentPath();
   closeTerm();
   updateNav(path);
   window.scrollTo({ top: 0 });
-  if (path === '/' || path === '') {
-    renderHome();
+  const page = HEAD_BY_PATH.get(path);
+  if (page) {
+    setHead(page);
+    renderPage(page);
   } else if (path === '/chart') {
     renderChartPage();
   } else if (path.startsWith('/view/')) {
@@ -458,16 +544,6 @@ function route(options = {}) {
     renderRecords();
   } else if (path === '/compare') {
     renderCompare();
-  } else if (path === '/learn') {
-    renderLearn();
-  } else if (path.startsWith('article-')) {
-    renderLearn();
-    requestAnimationFrame(() => openArticle(path));
-    return;
-  } else if (path === '/about') {
-    renderAbout();
-  } else if (path === '/privacy') {
-    renderPrivacy();
   } else {
     renderError('這個地址沒有對應的頁面，可能是舊鏈接，或輸入有誤。', '頁面不存在', '頁面不存在');
   }
@@ -476,7 +552,7 @@ function route(options = {}) {
 
 function updateNav(path) {
   const key = path.startsWith('/records') || path.startsWith('/compare') ? 'records'
-    : path.startsWith('/learn') || path.startsWith('article-') ? 'learn'
+    : path.startsWith('/learn') || path.startsWith('/article-') ? 'learn'
       : path.startsWith('/about') || path.startsWith('/privacy') ? 'about'
         : 'home';
   document.querySelectorAll('[data-nav]').forEach((a) => {
@@ -486,66 +562,20 @@ function updateNav(path) {
 
 // ---- Home ----
 
-function renderHome() {
-  document.title = '知命 · 四柱八字排盤';
-  const today = todayOverview();
-  const lunarToday = formatLunar(today.lunar.year, today.lunar.month, today.lunar.day, today.lunar.isLeap);
+const HOME_PAGE = PAGES.find((page) => page.path === '/');
+
+function homeContext() {
   state.formInput = state.formInput || loadLastInput() || DEFAULT_INPUT;
+  const today = todayOverview();
+  return {
+    ...pageContext(),
+    formHtml: renderForm(),
+    today: { ...today, lunarText: formatLunar(today.lunar.year, today.lunar.month, today.lunar.day, today.lunar.isLeap) },
+  };
+}
 
-  app.innerHTML = `
-    <div class="wrap">
-      <section class="hero">
-        <div class="hero-copy reveal">
-          <p class="eyebrow"><span class="eyebrow-line"></span>子平術 · 四柱八字</p>
-          <h1 class="hero-title">一紙八字<br><em>見天地</em>與人</h1>
-          <p class="hero-lede">以節氣為綱，以干支為目。完整還原年、月、日、時四柱，十神、藏干、大運、流年，一屏可讀。計算全部在本機完成，無需登錄。</p>
-          <ul class="hero-points">
-            <li><span class="dot"></span>精確到分鐘的節氣邊界</li>
-            <li><span class="dot"></span>真太陽時與子時校正</li>
-            <li><span class="dot"></span>命例只存在你的瀏覽器裏</li>
-          </ul>
-          <div class="today-strip">
-            <div class="today-main">
-              <span class="today-label">今日</span>
-              <span class="today-date">${today.dateText}</span>
-              <span class="today-ganzhi">${today.yearText} · ${today.dayText}</span>
-            </div>
-            <div class="today-sub">${lunarToday} · ${today.prevJie ? `${today.prevJie.name}後` : ''}</div>
-            <button class="today-btn" type="button" data-action="fill-today">以此日起盤 ${icon('arrowRight', 14)}</button>
-          </div>
-        </div>
-        <div class="hero-form reveal" style="--delay: 80ms">
-          ${renderForm()}
-        </div>
-      </section>
-
-      <section class="feature-row">
-        <article class="feature-card">
-          <span class="feature-index">壹</span>
-          <h3>節氣為界</h3>
-          <p>依據太陽視黃經推算的二十四節氣，覆蓋 1900–2100 年，精確到分鐘。年柱看立春，月柱看節令。</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-index">貳</span>
-          <h3>詳略由心</h3>
-          <p>四柱、十神、藏干、星運、納音、神煞、命宮、胎元、大運、流年。可一鍵切換簡盤。</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-index">叄</span>
-          <h3>數據留白</h3>
-          <p>不需要帳號。命例保存在本機，可隨時打開、刪除，或生成一枚只含出生信息的分享鏈接。</p>
-        </article>
-      </section>
-
-      <section class="quiet-note">
-        <span class="quiet-mark">觀</span>
-        <p>「觀其象，玩其辭。」傳統術數是一套觀察時間與關係的語言。本站呈現推算過程，不作吉凶斷定，也不替代任何現實決策。</p>
-        <a href="#/learn" class="quiet-link">從學堂開始 ${icon('arrowRight', 14)}</a>
-      </section>
-    </div>
-  `;
-
-  initHomeForm();
+function renderHome() {
+  renderPage(HOME_PAGE);
 }
 
 function renderForm() {
@@ -848,7 +878,7 @@ function initHomeForm() {
       state.selectedLuck = defaultLuckIndex(chart);
       state.period = null;
       saveLastInput(inputData);
-      navigate('#/chart');
+      navigate('/chart');
     } catch (err) {
       toast(err.message || '排盤失敗，請檢查輸入');
     }
@@ -1010,13 +1040,13 @@ function renderShared(payload) {
 }
 
 function renderError(message, heading = '鏈接未能起盤', pageTitle = '鏈接無效') {
-  document.title = `知命 · ${pageTitle}`;
+  setAppHead(`${BRAND} · ${pageTitle}`, '這個鏈接未能完成排盤，可能是舊連結或內容已被修改。');
   app.innerHTML = `
     <div class="wrap error-page">
       <span class="error-seal">空</span>
       <h1>${esc(heading)}</h1>
       <p>${esc(message)}</p>
-      <a class="btn btn-primary" href="#/">重新排盤 ${icon('arrowRight', 16)}</a>
+      <a class="btn btn-primary" href="${linkFor('/')}">重新排盤 ${icon('arrowRight', 16)}</a>
     </div>
   `;
 }
@@ -1033,7 +1063,7 @@ function climateAdvice(chart) {
 
 function renderChart(chart) {
   const name = chart.input.name || '未具名';
-  document.title = `知命 · ${name}的命盤`;
+  setAppHead(`${BRAND} · ${name}的命盤`, '四柱、十神、藏干與大運流年的完整命盤，資料來自本機輸入。');
   const solarText = solarDateText(chart);
   const gender = GENDER_LABEL[chart.input.gender];
   const dm = chart.dayMaster;
@@ -1049,7 +1079,7 @@ function renderChart(chart) {
   app.innerHTML = `
     <div class="wrap result-page">
       <div class="result-bar reveal">
-        <a class="back-link" href="#/">${icon('arrowLeft', 16)} 重新排盤</a>
+        <a class="back-link" href="${linkFor('/')}">${icon('arrowLeft', 16)} 重新排盤</a>
         <div class="result-actions">
           <button class="chip-btn" type="button" data-action="edit">${icon('edit', 15)} 修改</button>
           <button class="chip-btn" type="button" data-action="save">${icon('save', 15)} 保存</button>
@@ -1296,7 +1326,7 @@ function renderChart(chart) {
               <div><dt>起運</dt><dd>${chart.luck.startLabel} · ${chart.luck.directionLabel}</dd></div>
               <div><dt>交運</dt><dd>${chart.luck.jiaoyunText}</dd></div>
             </dl>
-            <a href="#/learn" class="card-link">讀懂命盤裏的術語 ${icon('arrowRight', 14)}</a>
+            <a href="${linkFor('/learn')}" class="card-link">讀懂命盤裏的術語 ${icon('arrowRight', 14)}</a>
           </section>
           </div>
         </aside>
@@ -1878,7 +1908,7 @@ function comparePanel(side, label, chart) {
 }
 
 function renderCompare() {
-  document.title = '知命 · 雙盤合參';
+  setAppHead('知命 · 雙盤合參', '比較兩組四柱的干支、十神與大運對應。');
   const candidates = compareCandidates();
   if (candidates.length < 2) {
     app.innerHTML = `
@@ -1891,7 +1921,7 @@ function renderCompare() {
           <span class="empty-seal">合</span>
           <h2>至少需要兩張命盤</h2>
           <p>先保存第二張命盤，或在排盤後直接回到這裡，就能把兩盤放在一起看天干地支的合沖刑害。</p>
-          <a class="btn btn-primary" href="#/">去排盤 ${icon('arrowRight', 16)}</a>
+          <a class="btn btn-primary" href="${linkFor('/')}">去排盤 ${icon('arrowRight', 16)}</a>
         </div>
       </div>`;
     return;
@@ -2012,7 +2042,7 @@ function backupNoticeHtml(records) {
 }
 
 function renderRecords() {
-  document.title = '知命 · 命例';
+  setAppHead('知命 · 命例', '本機保存的命例、標籤與備註。');
   state.records = loadRecords();
   if (!state.records.length) {
     state.recordSelect = false;
@@ -2143,10 +2173,10 @@ function renderRecords() {
           </div>` : ''}
         </div>
         <div class="records-toolbar-actions">
-          ${hasRecords && state.records.length + (state.chart ? 1 : 0) >= 2 ? `<a class="chip-btn" href="#/compare">${icon('spark', 15)} 雙盤合參</a>` : ''}
+          ${hasRecords && state.records.length + (state.chart ? 1 : 0) >= 2 ? `<a class="chip-btn" href="${linkFor('/compare')}">${icon('spark', 15)} 雙盤合參</a>` : ''}
           <button class="chip-btn" type="button" data-action="import-records">${icon('upload', 15)} 導入 JSON</button>
           ${hasRecords ? `<button class="chip-btn" type="button" data-action="export-records">${icon('download', 15)} 導出 JSON</button>` : ''}
-          <a class="chip-btn" href="#/">${icon('plus', 15)} 新建排盤</a>
+          <a class="chip-btn" href="${linkFor('/')}">${icon('plus', 15)} 新建排盤</a>
         </div>
       </div>
       ${hasRecords ? batchBar : ''}
@@ -2162,7 +2192,7 @@ function renderRecords() {
           <span class="empty-seal">錄</span>
           <h2>還沒有存下的命盤</h2>
           <p>起一局盤，在結果頁點「保存」，它就會出現在這裡。也可以導入之前導出的 JSON 備份。</p>
-          <a class="btn btn-primary" href="#/">去排盤 ${icon('arrowRight', 16)}</a>
+          <a class="btn btn-primary" href="${linkFor('/')}">去排盤 ${icon('arrowRight', 16)}</a>
         </div>`}
     </div>
   `;
@@ -2461,53 +2491,23 @@ async function importRecords(file) {
   toast(`已導入 ${additions.length} 張命例${skipped ? `，跳過 ${skipped} 條` : ''}${sameBirth ? `，其中 ${sameBirth} 張出生資料重複` : ''}`);
 }
 
-// ---- Learn ----
+// ---- Page rendering ----
 
-function openArticle(id) {
-  const article = document.getElementById(id);
-  if (!article) return;
-  article.open = true;
-  document.querySelectorAll('.learn-toc a').forEach((link) => {
-    link.classList.toggle('is-active', link.getAttribute('href') === `#${id}`);
-  });
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  article.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-  article.querySelector('summary')?.focus({ preventScroll: true });
-}
+const pageContext = () => ({ link: linkFor, root: BASE });
 
-function renderLearn() {
-  document.title = '知命 · 學堂';
-  app.innerHTML = `
-    <div class="wrap page">
-      <header class="page-head reveal">
-        <p class="eyebrow"><span class="eyebrow-line"></span>學堂</p>
-        <h1>先把語言學會<br>再談命理</h1>
-        <p class="page-lede">四柱不是四個字，而是一套關於時間、節氣與關係的記號系統。以下短文，按排盤順序解釋你會遇到的術語。</p>
-      </header>
-      <div class="learn-layout">
-        <aside class="learn-toc reveal">
-          <p class="toc-label">目錄</p>
-          ${ARTICLES.map((a, i) => `<a href="#article-${a.id}"><span>${String(i + 1).padStart(2, '0')}</span>${a.title}</a>`).join('')}
-          <div class="toc-quote">「不執一端，<br>不落宿命。」</div>
-        </aside>
-        <div class="articles">
-          ${ARTICLES.map((a, i) => `
-            <details class="article reveal" id="article-${a.id}" ${i === 0 ? 'open' : ''} style="--delay:${i * 40}ms">
-              <summary>
-                <span class="article-index">${String(i + 1).padStart(2, '0')}</span>
-                <span class="article-title-wrap">
-                  <span class="article-kicker">${a.kicker}</span>
-                  <span class="article-title">${a.title}</span>
-                  <span class="article-summary">${a.summary}</span>
-                </span>
-                <span class="article-chevron">${icon('chevron', 18)}</span>
-              </summary>
-              <div class="article-body prose">${a.body}</div>
-            </details>`).join('')}
-        </div>
-      </div>
-    </div>
-  `;
+// pages.js holds the only copy of this markup, so the prerendered HTML and the
+// client-rendered view of a content page cannot drift apart.
+function renderPage(page) {
+  app.innerHTML = page.build(page.path === '/' ? homeContext() : pageContext());
+  if (page.path === '/') {
+    initHomeForm();
+    return;
+  }
+  const reminderCard = page.path === '/about' ? app.querySelector('[data-reminder-card]') : null;
+  if (reminderCard && isNative()) {
+    reminderCard.hidden = false;
+    bindReminderSettings();
+  }
 }
 
 // ---- Solar-term reminders ----
@@ -2614,120 +2614,6 @@ function bindReminderSettings() {
   });
 }
 
-// ---- About ----
-
-function renderAbout() {
-  document.title = '知命 · 關於';
-  const reminderCard = isNative() ? `
-        <article class="about-card reveal" style="--delay:240ms">
-          <span class="about-index">伍</span>
-          <h2>節氣提醒</h2>
-          <p>在二十四個節氣交接時提醒一次；逢節令，月柱自此更新。提醒只排在你的裝置上，不經過伺服器。</p>
-          <label class="switch-row">
-            <input type="checkbox" id="solar-reminder" role="switch">
-            <span class="switch-track" aria-hidden="true"></span>
-            <span>開啟節氣提醒</span>
-          </label>
-          <p class="tiny-note" id="solar-reminder-note">節氣交接時提醒一次；可隨時關閉。</p>
-        </article>` : '';
-  app.innerHTML = `
-    <div class="wrap page about-page">
-      <header class="page-head reveal">
-        <p class="eyebrow"><span class="eyebrow-line"></span>關於</p>
-        <h1>知命，而不認命</h1>
-        <p class="page-lede">一個安靜、完整、不需要登錄的四柱排盤工具。把傳統術數所需的信息如實呈現，把判斷留給你。</p>
-      </header>
-
-      <section class="about-grid">
-        <article class="about-card reveal">
-          <span class="about-index">壹</span>
-          <h2>為什麼重做排盤</h2>
-          <p>舊的排盤頁面常常被表單、廣告和登錄牆切碎。知命只保留三件事：準確的時間換算、清晰的四柱結構、可保存的命例。所有多餘的東西都被拿掉了。</p>
-        </article>
-        <article class="about-card reveal" style="--delay:60ms">
-          <span class="about-index">貳</span>
-          <h2>數據與隱私</h2>
-          <p>沒有帳戶，沒有服務器寫入。出生信息只在你的瀏覽器裏計算；命例保存在 localStorage。分享鏈接會把出生信息編碼進鏈接本身，點擊前請確認接收方可以查看。</p>
-          <a href="#/privacy" class="card-link">完整隱私政策 ${icon('arrowRight', 14)}</a>
-        </article>
-        <article class="about-card reveal" style="--delay:120ms">
-          <span class="about-index">叄</span>
-          <h2>曆法說明</h2>
-          <p>年柱以立春為界，月柱以十二節為界。節氣按太陽視黃經推算，覆蓋 1899–2101 年，精確到分鐘。農曆日期覆蓋 1900–2100 年，含閏月。</p>
-        </article>
-        <article class="about-card reveal" style="--delay:180ms">
-          <span class="about-index">肆</span>
-          <h2>參考與邊界</h2>
-          <p>術語與取象參考《淵海子平》《三命通會》《子平真詮》《窮通寶鑑》等傳統文獻。五行比例、身強身弱與喜用提示是簡化的教學性計算，不是命理斷語。</p>
-        </article>
-        ${reminderCard}
-      </section>
-
-      <section class="about-quote reveal">
-        <span class="quote-mark">「</span>
-        <p>善易者不卜。真正的傳統，不是把一切交給命盤，而是借它照見自己。</p>
-      </section>
-
-      <section class="about-disclaimer reveal">
-        <h3>免責聲明</h3>
-        <p>本站內容用於傳統文化研習與信息整理，不構成醫療、法律、投資、婚戀或任何現實決策建議。請勿依據排盤結果作出重大決定。</p>
-        <p class="about-tech">純靜態頁面 · 無追蹤 · 本地計算 · <a href="tests.html">排盤回歸測試</a></p>
-      </section>
-    </div>
-  `;
-  bindReminderSettings();
-}
-
-// ---- Privacy ----
-
-function renderPrivacy() {
-  document.title = '知命 · 隱私政策';
-  app.innerHTML = `
-    <div class="wrap page about-page privacy-page">
-      <header class="page-head reveal">
-        <p class="eyebrow"><span class="eyebrow-line"></span>隱私</p>
-        <h1>隱私政策</h1>
-        <p class="page-lede">知命不設帳號，也不把命盤寫進伺服器。以下說明資料放在哪裏、如何刪除，以及 App 會用到哪些系統權限。</p>
-        <p class="privacy-meta">生效日期：2026年11月22日 · 適用於網頁版與 iOS／Android App</p>
-      </header>
-
-      <section class="card privacy-body prose reveal">
-        <h2>一、蒐集範圍</h2>
-        <p>知命沒有帳號系統，也沒有伺服器端資料庫，不蒐集、不上傳、不販售個人資料。App 不含廣告、分析、當機回報或追蹤 SDK；網頁版不載入第三方腳本與字型。</p>
-
-        <h2>二、留在裝置上的資料</h2>
-        <p>你輸入的姓名（選填）、性別、出生日期與時間、曆法與校正選項，以及命例的標籤、備註、資料夾，會保存在目前裝置的瀏覽器或 App 儲存空間（localStorage）。版面主題、命例排序與最近一次輸入也會一併保存，方便下次開啟。</p>
-        <p>這些資料只用於在本機排盤與顯示，不會離開裝置。移除 App、清除網站資料，或在命例頁刪除命例後，資料即不再存在，知命無法代你復原。</p>
-
-        <h2>三、分享鏈接與存圖</h2>
-        <p>分享鏈接把出生資訊編碼在網址的片段（# 之後）裏，不會送到任何伺服器；你也可以選擇不含姓名的分享方式。收到鏈接的人可以看到鏈接中的出生資訊，請在分享前自行確認。</p>
-        <p>命盤圖片、複製文字與列印都在本機完成，不會上傳。使用系統分享面板時，資料的去向由你在面板中選擇。</p>
-
-        <h2>四、通知</h2>
-        <p>App 可選擇開啟節氣提醒。提醒由裝置本機排程，內容由本機計算，不經過推播伺服器。你可以隨時在 App 內關閉，或到系統設定撤回通知權限。</p>
-
-        <h2>五、系統權限</h2>
-        <p>知命只會在你主動開啟提醒時要求通知權限，其餘時間不使用相機、麥克風、通訊錄、定位或健康資料。分享與存圖交由系統面板處理，不額外申請權限。</p>
-
-        <h2>六、兒童與敏感資料</h2>
-        <p>知命是一般性的傳統文化研習工具，不針對兒童設計，也不主動蒐集任何年齡層的資料。命盤屬於你自行輸入的內容，請避免在姓名欄填寫不必要的敏感資訊。</p>
-
-        <h2>七、政策更新</h2>
-        <p>若資料處理方式有變，會先更新本頁與生效日期，再隨版本發布。重大變更會在 App 更新說明中提示。</p>
-
-        <h2>八、聯絡方式</h2>
-        <p>如對本政策有疑問，可透過 App Store 或 Google Play 商店頁面所列的開發者聯絡方式與我們聯繫。</p>
-      </section>
-
-      <section class="about-disclaimer reveal">
-        <h3>回到關於</h3>
-        <p>知命呈現推算過程，不作吉凶斷定，也不替代任何現實決策。</p>
-        <p class="about-tech"><a href="#/about">關於知命</a> · <a href="tests.html">排盤回歸測試</a></p>
-      </section>
-    </div>
-  `;
-}
-
 // ---- Actions ----
 
 function chartToText(chart, options = {}) {
@@ -2814,7 +2700,7 @@ async function shareCurrent() {
   }
   const input = hide ? { ...state.chart.input, name: '' } : state.chart.input;
   const payload = encodeInput({ v: 2, input, view: viewFromState() });
-  const url = `${location.origin}${location.pathname}#/view/${payload}`;
+  const url = `${location.origin}${BASE}#/view/${payload}`;
   copyText(url, hide ? '已複製分享鏈接（不含姓名）' : '已複製分享鏈接');
 }
 
@@ -2985,7 +2871,7 @@ function printCompact() {
 function editCurrent() {
   if (!state.chart) return;
   state.formInput = state.chart.input;
-  navigate('#/');
+  navigate('/');
 }
 
 function exportRecords() {
@@ -3018,7 +2904,7 @@ function openRecord(id) {
     state.formInput = record.input;
     state.selectedLuck = defaultLuckIndex(chart);
     state.period = null;
-    navigate('#/chart');
+    navigate('/chart');
   } catch (err) {
     toast(err.message || '命例無法起盤');
   }
@@ -3169,12 +3055,6 @@ document.addEventListener('click', (event) => {
     app.focus();
     return;
   }
-  const tocLink = event.target.closest('.learn-toc a[href^="#article-"]');
-  if (tocLink) {
-    event.preventDefault();
-    openArticle(tocLink.getAttribute('href').slice(1));
-    return;
-  }
   const termEl = event.target.closest('[data-term]');
   if (termEl) {
     event.preventDefault();
@@ -3242,6 +3122,7 @@ document.addEventListener('click', (event) => {
 });
 
 window.addEventListener('hashchange', () => route({ focus: true }));
+window.addEventListener('popstate', () => route({ focus: true }));
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !document.getElementById('term-pop')?.hidden) {
@@ -3258,6 +3139,11 @@ window.addEventListener('resize', () => closeTerm());
 initTheme();
 state.records = loadRecords();
 state.recordSort = loadRecordSort();
+document.querySelectorAll('[data-route]').forEach((a) => { a.href = linkFor(a.dataset.route); });
+// Old bookmarks and share links carry #/learn/…; move them onto the indexable path form.
+if (isHosted() && location.hash.length > 1 && PATH_ROUTES.has(currentPath())) {
+  history.replaceState({}, '', linkFor(currentPath()));
+}
 route();
 syncSolarTermReminders().catch(() => {});
 
@@ -3296,7 +3182,7 @@ function setupServiceWorker() {
   window.addEventListener('load', async () => {
     let registration;
     try {
-      registration = await navigator.serviceWorker.register('sw.js');
+      registration = await navigator.serviceWorker.register(`${BASE}sw.js`, { scope: BASE });
     } catch {
       return;
     }

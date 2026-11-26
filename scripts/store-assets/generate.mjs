@@ -123,9 +123,11 @@ const formats = [
   { id: 'google-play-phone', label: 'Google Play · 手機', width: 1080, height: 1920, vw: 360, vh: 570, scale: 3 },
   { id: 'app-store-ipad', label: 'App Store · iPad 13 吋', width: 2064, height: 2752, vw: 1032, vh: 1160, scale: 2 },
 ];
+// Read from the shell so the manifest cannot drift from the build it depicts.
+const webVersion = (await readFile(join(root, 'index.html'), 'utf8')).match(/style\.css\?v=(\d+)/)?.[1] || 'unknown';
 const manifest = {
   locale: 'zh-Hant', status: 'browser-draft-not-for-submission', sourceType: 'Chrome responsive web capture, not native iOS or Android',
-  capturedAt: new Date().toISOString(), appVersion: '1.0.0', nativeBuild: 2, webVersion: '20261145',
+  capturedAt: new Date().toISOString(), appVersion: '1.0.0', nativeBuild: 2, webVersion,
   demoData: 'All names, birth inputs, notes and records are fictional fixtures in an isolated browser profile.',
   limitations: ['No native status bars, safe-area insets, platform fonts or system dialogs are represented.', 'Replace raw captures with real app captures and recheck layout before submission.', 'Native widgets, notifications and sharing are not simulated.'],
   sources: {}, formats, scenes, screenshots: [], checks: [],

@@ -12,6 +12,7 @@ const bundleId = 'top.turbie.zhiming';
 const out = join(root, 'store/zh-Hant/native');
 await mkdir(out, { recursive: true });
 const driverSrc = await readFile(join(root, 'scripts/native-qa/driver.js'), 'utf8');
+const webVersion = (await readFile(join(root, 'index.html'), 'utf8')).match(/style\.css\?v=(\d+)/)?.[1] || 'unknown';
 
 const CHART = [
   { theme: 'light' },
@@ -51,10 +52,11 @@ async function updateManifest(deviceName, entry) {
         capturedWith: 'scripts/native-qa/capture.mjs',
         appVersion: '1.0.0',
         nativeBuild: 2,
-        webVersion: '20261147',
+        webVersion,
         bundleId,
         devices: {},
       };
+  manifest.webVersion = webVersion;
   manifest.devices[deviceName] = entry;
   await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;

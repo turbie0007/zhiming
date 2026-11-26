@@ -85,6 +85,8 @@ if (existsSync(nativePath)) {
     }
   }
   console.log(`Native captures validated: ${Object.keys(native.devices).join(', ')}.`);
+  assert.equal(native.webVersion, manifest.webVersion, 'Native and draft captures are from different web builds');
+  assert.equal(native.status, 'native-simulator-capture', 'Native captures must be labelled as simulator captures');
 }
 console.log('PASS: copy limits and parity; 18 posters + 18 raw captures; RGB screenshot sizes; icons; feature graphic; source hashes; gallery links.');
-console.log('Browser drafts only. Native recapture, contact details and store submission remain pending.');
+console.log('Remaining before submission: fill in store contact details, complete physical-device QA, then upload.');

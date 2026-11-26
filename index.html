@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
+  <meta name="app-base" content="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>知命 · 四柱八字排盤</title>
   <meta name="description" content="知命：一個安靜、完整、無需登錄的四柱八字排盤工具。精確節氣、真太陽時、十神藏干、大運流年，計算全部在本地完成。">
@@ -11,6 +12,9 @@
   <meta property="og:title" content="知命 · 四柱八字排盤">
   <meta property="og:description" content="精確節氣、真太陽時、十神藏干、大運流年。命例只存在你的瀏覽器裏，計算全部在本機完成。">
   <meta property="og:image" content="assets/icons/icon-1024.png">
+  <meta property="og:image:width" content="1024">
+  <meta property="og:image:height" content="1024">
+  <meta property="og:image:alt" content="知命四柱八字排盤工具圖示">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="知命 · 四柱八字排盤">
   <meta name="twitter:description" content="精確節氣、真太陽時、十神藏干、大運流年。計算全部在本機完成。">
@@ -23,7 +27,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261147">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261149">
   <script>
     try {
       var storedTheme = localStorage.getItem('zhiming.theme.v1');
@@ -46,13 +50,13 @@
         </span>
       </a>
       <nav class="site-nav" aria-label="主導航">
-        <a href="#/" data-nav="home">排盤</a>
-        <a href="#/records" data-nav="records">命例</a>
-        <a href="#/learn" data-nav="learn">學堂</a>
-        <a href="#/about" data-nav="about">關於</a>
+        <a href="#/" data-route="/" data-nav="home">排盤</a>
+        <a href="#/records" data-route="/records" data-nav="records">命例</a>
+        <a href="#/learn" data-route="/learn" data-nav="learn">學堂</a>
+        <a href="#/about" data-route="/about" data-nav="about">關於</a>
       </nav>
       <div class="header-tools">
-        <a class="header-cta" href="#/">起一局盤</a>
+        <a class="header-cta" href="#/" data-route="/">起一局盤</a>
         <button class="icon-btn theme-toggle" type="button" data-action="theme" aria-label="切換深淺色主題">
           <span data-theme-icon></span>
         </button>
@@ -70,27 +74,27 @@
       </div>
       <p class="footer-note">傳統文化研習工具 · 計算結果僅供參照 · 不構成任何決策建議</p>
       <div class="footer-links">
-        <a href="#/learn">學堂</a>
-        <a href="#/about">關於</a>
-        <a href="#/privacy">隱私</a>
+        <a href="#/learn" data-route="/learn">學堂</a>
+        <a href="#/about" data-route="/about">關於</a>
+        <a href="#/privacy" data-route="/privacy">隱私</a>
       </div>
     </div>
   </footer>
 
   <nav class="mobile-nav" aria-label="移動端導航">
-    <a href="#/" data-nav="home">
+    <a href="#/" data-route="/" data-nav="home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/></svg>
       <span>排盤</span>
     </a>
-    <a href="#/records" data-nav="records">
+    <a href="#/records" data-route="/records" data-nav="records">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></svg>
       <span>命例</span>
     </a>
-    <a href="#/learn" data-nav="learn">
+    <a href="#/learn" data-route="/learn" data-nav="learn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
       <span>學堂</span>
     </a>
-    <a href="#/about" data-nav="about">
+    <a href="#/about" data-route="/about" data-nav="about">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
       <span>關於</span>
     </a>
@@ -110,6 +114,6 @@
     <div class="noscript">知命需要 JavaScript 才能在本地完成排盤計算，請啟用後再試。</div>
   </noscript>
 
-  <script type="module" src="assets/js/app.js?v=20261147"></script>
+  <script type="module" src="assets/js/app.js?v=20261149"></script>
 </body>
 </html>

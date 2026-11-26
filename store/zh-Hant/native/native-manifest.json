@@ -4,15 +4,15 @@
   "capturedWith": "scripts/native-qa/capture.mjs",
   "appVersion": "1.0.0",
   "nativeBuild": 2,
-  "webVersion": "20261147",
+  "webVersion": "20261149",
   "bundleId": "top.turbie.zhiming",
   "devices": {
     "ios-iphone": {
       "platform": "ios",
       "device": "Zhiming-QA-iPhone",
       "runtime": "iOS-27-2",
-      "state": "Booted",
-      "capturedAt": "2026-11-23T13:36:36.798Z",
+      "state": "Shutdown",
+      "capturedAt": "2026-11-26T14:35:08.603Z",
       "screenshots": [
         {
           "scene": "01-chart",
@@ -116,7 +116,7 @@
             "overflow": false,
             "theme": "light",
             "href": "capacitor://localhost#/learn",
-            "title": "知命 · 學堂"
+            "title": "知命 · 學堂｜四柱八字基礎"
           }
         },
         {
@@ -147,7 +147,7 @@
       "platform": "android",
       "device": "sdk_gphone64_arm64",
       "os": "Android 16 (API 36)",
-      "capturedAt": "2026-11-23T13:55:59.843Z",
+      "capturedAt": "2026-11-26T14:33:40.589Z",
       "screenshots": [
         {
           "scene": "01-chart",
@@ -251,7 +251,7 @@
             "overflow": false,
             "theme": "light",
             "href": "https://localhost/#/learn",
-            "title": "知命 · 學堂"
+            "title": "知命 · 學堂｜四柱八字基礎"
           }
         },
         {
@@ -282,8 +282,8 @@
       "platform": "ios",
       "device": "iPad Pro 13-inch (M5)",
       "runtime": "iOS-27-2",
-      "state": "Booted",
-      "capturedAt": "2026-11-23T13:37:09.885Z",
+      "state": "Shutdown",
+      "capturedAt": "2026-11-26T14:37:02.575Z",
       "screenshots": [
         {
           "scene": "01-chart",
@@ -387,7 +387,7 @@
             "overflow": false,
             "theme": "light",
             "href": "capacitor://localhost#/learn",
-            "title": "知命 · 學堂"
+            "title": "知命 · 學堂｜四柱八字基礎"
           }
         },
         {

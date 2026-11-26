@@ -1,0 +1,5 @@
+{
+  "_comment": "佈署前把 url 填成正式網域（例如 https://example.com），再執行 npm run build:web。留空時建置會跳過 canonical、JSON-LD、og:url 與 sitemap.xml。basePath 用於子目錄佈署。",
+  "url": "",
+  "basePath": "/"
+}

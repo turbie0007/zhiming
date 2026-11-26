@@ -1,8 +1,8 @@
 # 知命 Roadmap
 
-更新日期：2026-11-23
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261145）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；尚未送審。
+更新日期：2026-11-26
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261149）
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構、預渲染與原生截圖更新；尚未送審、尚未部署。
 
 ## 產品原則
 
@@ -21,6 +21,7 @@
 | 隱私合規 | `PrivacyInfo.xcprivacy`、隱私政策頁、Android Data Safety | 送審必要（清單與政策頁已完成；兩商店申報答案見 `PRIVACY-DECLARATIONS.md`，待公開政策網址後填入主控台） |
 | 簽署與發布 | Android release keystore＋AAB；iOS Archive／TestFlight | 本機建置流程已完成；未簽署 AAB／iOS 裝置 Archive 已驗證；正式簽署、TestFlight／Play 上傳仍待完成 |
 | 實機 QA | iPhone／Android 各一輪，含離線、背景、旋轉 | 降低負評 |
+| 搜尋引擎與部署 | 可爬路徑、預渲染、metadata、sitemap | 已完成：12 頁預渲染、真實路徑、per-page title/description/canonical、JSON-LD、robots.txt、sitemap.xml（見下方「搜尋引擎與預渲染」）。**尚未選定網域，`site.config.json` 的 `url` 仍為空**，填入後重建才會產生絕對 URL；尚未部署 |
 | 商店素材 | 截圖、文案、關鍵字、App 圖示 | 繁體中文雙商店文案、Google Play 主題圖片與圖示已完成；18 張原生截圖（iOS iPhone 17、iPad Pro 13 吋 M5、Android Pixel 5）已擷取並通過驗證，見 [素材預覽](store/zh-Hant/index.html) 與 [文案](store/zh-Hant/listing-copy.md)。字數、尺寸及圖片格式已驗證；送審前仍須完成實機 QA，補齊支援信箱／網址、公開隱私政策網址及著作權欄位；尚未上傳 |
 
 ### 本機發布建置（2026-11-23）
@@ -52,8 +53,17 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 
 仍待：真實 upload key 的簽署驗證、Apple 簽署／匯出驗證（目前找不到有效 codesigning identity）、公開隱私政策 URL、商店主控台表單與上傳、實機 QA。未簽署建置成功不等於可送審；小工具桌面互動、通知與分享仍需實機驗證。
 
-## Phase 1｜命理深度 1.1（2–4 週）
+### 搜尋引擎與預渲染（2026-11-26）
 
+可索引內容集中在 `assets/js/pages.js`（搭配 `assets/js/ui.js` 的 icon／esc），該模組不碰 DOM，所以 `scripts/build-web.mjs` 能在純 Node 下用同一支 build 函數產生靜態 HTML，預渲染結果與客戶端渲染不會分岔。
+
+- 路徑：`/`、`/learn/`、`/learn/<七篇文章>/`、`/about/`、`/privacy/`、`404.html`，共 12 頁；`/records`、`/chart`、`/compare`、`/view/<token>` 只有本機資料，維持 `#` 路由並在 robots.txt 與 JSON-LD 中排除。
+- 原生（`capacitor://localhost`）一律用 hash 路由；同一份預渲染 HTML 裡的真實路徑連結由 click 攔截器轉成 hash，因此 App 內不會去抓不存在的目錄。
+- 每頁有獨立 title／description／og＋twitter（含絕對 og:image）、canonical、`robots`，以及 WebSite＋SoftwareApplication、CollectionPage、Article＋BreadcrumbList、AboutPage、WebPage 結構化資料。學堂目錄改為七張文章卡（原本的七段手風琴會造成重複內容）。
+- `site.config.json` 的 `url` 決定是否輸出絕對 URL：留空時建置會跳過 canonical、og:url、JSON-LD 與 sitemap.xml 並印出警告，避免把猜的網域燒進檔案。子目錄部署用 `basePath`。
+- 驗證：以臨時網域跑過一次建置，確認 canonical／JSON-LD／sitemap 輸出正確後還原；瀏覽器實測深連結、SPA 真實路徑切換、back 按鈕、`#/records`／`#/chart` hash 路由與 noindex；`tests.html` 全部案例通過；Android 模擬器 CDP 實測原生 hash 路由、表單、關於頁節氣提醒卡片仍可見。
+
+## Phase 1｜命理深度 1.1（2–4 週）
 目標：讓進階使用者覺得夠專業。
 
 1. **格局與用神分析**（已完成 2026-11-22）：月令取格、透干／本氣、建祿／羊刃，並以扶抑、通關、調候、病藥產生用神候選與理由。
