@@ -2,7 +2,7 @@
 
 更新日期：2026-11-27
 目前版本：1.0.0（原生 build 2；網頁快取版號 20261149）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版已部署 GitHub Pages（`https://turbie0007.github.io/zhiming/`）；尚未送審。
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages）；尚未送審。
 
 ## 產品原則
 
@@ -21,7 +21,7 @@
 | 隱私合規 | `PrivacyInfo.xcprivacy`、隱私政策頁、Android Data Safety | 送審必要（清單與政策頁已完成；兩商店申報答案見 `PRIVACY-DECLARATIONS.md`，待公開政策網址後填入主控台） |
 | 簽署與發布 | Android release keystore＋AAB；iOS Archive／TestFlight | 本機建置流程已完成；未簽署 AAB／iOS 裝置 Archive 已驗證；正式簽署、TestFlight／Play 上傳仍待完成 |
 | 實機 QA | iPhone／Android 各一輪，含離線、背景、旋轉 | 降低負評 |
-| 搜尋引擎與部署 | 可爬路徑、預渲染、metadata、sitemap | 已完成並上線：12 頁預渲染、真實路徑、per-page title/description/canonical、JSON-LD、robots.txt、sitemap.xml（見下方「搜尋引擎與預渲染」）。2026-11-27 經 `.github/workflows/pages.yml` 部署到 `https://turbie0007.github.io/zhiming/`（repo 轉 public、Pages workflow 模式）。**自訂網域待定**：拿到後把 `site.config.json` 的 `url` 換成該網域、`basePath` 改 `/`，重建並設定 Pages CNAME／DNS |
+| 搜尋引擎與部署 | 可爬路徑、預渲染、metadata、sitemap | 已完成並上線：12 頁預渲染、真實路徑、per-page title/description/canonical、JSON-LD、robots.txt、sitemap.xml（見下方「搜尋引擎與預渲染」）。2026-11-27 經 `.github/workflows/pages.yml` 部署，自訂網域 `https://www.myzhiming.com/` 已生效（`site.config.json` url＝該網域、basePath＝`/`；repo 根 `CNAME`；Pages cname 經 API 設定、https_enforced＝true）。DNS：www CNAME→turbie0007.github.io、apex A/AAAA→GitHub Pages IPs（Namecheap）。裸網域 https 憑證由 GitHub 非同步核發中，http 裸網域已 301 轉 www |
 | 商店素材 | 截圖、文案、關鍵字、App 圖示 | 繁體中文雙商店文案、Google Play 主題圖片與圖示已完成；18 張原生截圖（iOS iPhone 17、iPad Pro 13 吋 M5、Android Pixel 5）已擷取並通過驗證，見 [素材預覽](store/zh-Hant/index.html) 與 [文案](store/zh-Hant/listing-copy.md)。字數、尺寸及圖片格式已驗證；送審前仍須完成實機 QA，補齊支援信箱／網址、公開隱私政策網址及著作權欄位；尚未上傳 |
 
 ### 本機發布建置（2026-11-23）
