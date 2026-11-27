@@ -265,7 +265,7 @@
   </main>
 
   <script type="module">
-    import { computeChart } from './assets/js/bazi.js?v=20261149';
+    import { computeChart, interactionSummary } from './assets/js/bazi.js?v=20261150';
 
     const BASE = { gender: 'male', city: '北京', lateZi: true, trueSolar: false };
     const gz = (p) => (p ? `${p.stemChar}${p.branchChar}` : '—');
@@ -474,6 +474,36 @@
           用神: c.structure.useful.primary.label,
         }),
         expect: { 格局: '建祿格', 取格把握: '高', 兼格: '食神格', 用神: '火' },
+      },
+      {
+        title: '時間軸標記：子午沖＋甲庚沖',
+        note: '原局甲子，流年庚午。地支子午相沖、天干甲庚相沖，皆屬有害標記。',
+        run: () => {
+          const r = interactionSummary([{ stem: 0, branch: 0, source: '年柱' }], { stem: 6, branch: 6, source: '流年' });
+          return { 種類: r.kinds.join(','), 有害: String(r.harm), 含子午沖: String(r.texts.includes('子午相沖')) };
+        },
+        expect: { 種類: 'chong', 有害: 'true', 含子午沖: 'true' },
+      },
+      {
+        title: '時間軸標記：子丑合化土',
+        note: '原局甲子，流年乙丑。地支子丑合化土，屬合會（非有害）。',
+        run: () => {
+          const r = interactionSummary([{ stem: 0, branch: 0, source: '年柱' }], { stem: 1, branch: 1, source: '流年' });
+          return { 種類: r.kinds.join(','), 有害: String(r.harm), 含子丑合: String(r.texts.includes('子丑合化土')) };
+        },
+        expect: { 種類: 'he', 有害: 'false', 含子丑合: 'true' },
+      },
+      {
+        title: '時間軸標記：只計與目標柱相關',
+        note: '原局甲子＋庚午本身子午沖，但流年丙寅與两者無合沖刑害；目標柱標記應為空，不被原局內部互動污染。',
+        run: () => {
+          const r = interactionSummary(
+            [{ stem: 0, branch: 0, source: '年柱' }, { stem: 6, branch: 6, source: '月柱' }],
+            { stem: 2, branch: 2, source: '流年' },
+          );
+          return { 種類: r.kinds.join(','), 有害: String(r.harm), 文字數: String(r.texts.length) };
+        },
+        expect: { 種類: '', 有害: 'false', 文字數: '0' },
       },
     ];
 

@@ -4403,6 +4403,248 @@ body:has(.update-banner:not([hidden])) .toast {
 
 /* ---------- Print ---------- */
 
+.timeline-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-bottom: 12px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.tl-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tl-legend small {
+  flex-basis: 100%;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.timeline-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tl-lane {
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.tl-lane:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.tl-lane-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.tl-lane-head b {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.tl-lane-head small {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.tl-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.tl-rail::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tl-rail::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+
+.tl-item {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 88px;
+  padding: 9px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.tl-luck {
+  min-width: 104px;
+}
+
+.tl-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+.tl-item.is-active {
+  border-color: var(--cinnabar);
+  background: var(--cinnabar-soft);
+  box-shadow: inset 0 0 0 1px var(--cinnabar);
+}
+
+.tl-item.is-now::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.tl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  font-size: 9px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+
+.tl-top i {
+  font-style: normal;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.tl-chars {
+  display: flex;
+  gap: 2px;
+  font-family: var(--serif);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.tl-chars b {
+  font-size: 23px;
+}
+
+.tl-god {
+  font-size: 10px;
+  color: var(--ink-2);
+}
+
+.tl-badges {
+  display: flex;
+  gap: 3px;
+  margin-top: 1px;
+}
+
+.tl-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 600;
+  font-style: normal;
+  background: var(--gold-soft);
+  color: var(--jade);
+}
+
+.tl-badge.is-harm {
+  background: var(--cinnabar-soft);
+  color: var(--cinnabar-2);
+}
+
+.tl-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.tl-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tl-detail-head b {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.tl-detail-head small {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.tl-detail-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.tl-detail-row > span {
+  flex: 0 0 auto;
+  width: 30px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.tl-detail-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .tl-item {
+    min-width: 78px;
+    padding: 8px 6px;
+  }
+
+  .tl-luck {
+    min-width: 92px;
+  }
+
+  .tl-chars b {
+    font-size: 21px;
+  }
+}
+
 @media print {
   :root,
   :root[data-theme="dark"] {
@@ -4443,6 +4685,7 @@ body:has(.update-banner:not([hidden])) .toast {
   .chart-foot,
   .card-link,
   .today-btn,
+  .timeline-card,
   .chart-card .chip-btn {
     display: none !important;
   }

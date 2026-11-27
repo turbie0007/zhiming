@@ -2,13 +2,13 @@ import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
   JIE_MAP, CITIES, CLIMATE,
-} from './data.js?v=20261149';
+} from './data.js?v=20261150';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261149';
+} from './astro.js?v=20261150';
 
 const DAY_MS = 86400000;
 
@@ -641,6 +641,16 @@ export function analyzeInteractions(items) {
     stems: [...stemMap.values()].sort((a, b) => STEM_KIND_ORDER[a.kind] - STEM_KIND_ORDER[b.kind]),
     branches: [...branchMap.values()].sort((a, b) => BRANCH_KIND_ORDER[a.kind] - BRANCH_KIND_ORDER[b.kind]),
   };
+}
+
+const HARM_KINDS = new Set(['chong', 'xing', 'hai', 'po']);
+
+export function interactionSummary(context, target) {
+  const all = analyzeInteractions([...context, target]);
+  const related = [...all.stems, ...all.branches].filter((item) => item.sources.includes(target.source));
+  const kinds = [...new Set(related.map((item) => item.kind))]
+    .sort((a, b) => (HARM_KINDS.has(b) ? 1 : 0) - (HARM_KINDS.has(a) ? 1 : 0));
+  return { kinds, texts: related.map((item) => item.text), harm: related.some((item) => HARM_KINDS.has(item.kind)) };
 }
 
 function formatAge(decYears) {

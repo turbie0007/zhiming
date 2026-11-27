@@ -1,23 +1,23 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261149';
+} from './data.js?v=20261150';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
-  analyzeInteractions, periodTable, hourPeriod,
-} from './bazi.js?v=20261149';
+  analyzeInteractions, interactionSummary, periodTable, hourPeriod,
+} from './bazi.js?v=20261150';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261149';
+} from './astro.js?v=20261150';
 import {
   isNative, haptic, shareNative, notificationPermission,
   requestNotificationPermission, scheduleNotifications, cancelNotifications, syncStatusBar,
-} from './native.js?v=20261149';
-import { ARTICLES } from './learn.js?v=20261149';
-import { GLOSSARY } from './glossary.js?v=20261149';
-import { esc, icon } from './ui.js?v=20261149';
-import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261149';
+} from './native.js?v=20261150';
+import { ARTICLES } from './learn.js?v=20261150';
+import { GLOSSARY } from './glossary.js?v=20261150';
+import { esc, icon } from './ui.js?v=20261150';
+import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261150';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -61,6 +61,7 @@ const state = {
   formInput: null,
   selectedLuck: 0,
   period: null,
+  timeline: null,
   compact: false,
   records: [],
   recordQuery: '',
@@ -877,6 +878,7 @@ function initHomeForm() {
       state.formInput = inputData;
       state.selectedLuck = defaultLuckIndex(chart);
       state.period = null;
+      state.timeline = null;
       saveLastInput(inputData);
       navigate('/chart');
     } catch (err) {
@@ -1008,6 +1010,7 @@ function renderChartPage() {
         state.formInput = stored;
         state.selectedLuck = defaultLuckIndex(state.chart);
         state.period = null;
+        state.timeline = null;
       } catch {
         state.chart = null;
       }
@@ -1203,6 +1206,24 @@ function renderChart(chart) {
               ${chart.luck.steps.map((step, i) => renderLuckCard(step, i, state.selectedLuck === i)).join('')}
             </div>
             <div id="liunian-body" role="tabpanel" aria-labelledby="luck-tab-${state.selectedLuck}" tabindex="0">${renderLiunian(chart, selected)}</div>
+          </section>
+
+          <section class="card timeline-card reveal" style="--delay: 70ms" id="timeline-section" aria-labelledby="timeline-title">
+            <div class="card-head">
+              <div>
+                <p class="card-kicker">時間軸</p>
+                <h2 id="timeline-title">大運流年</h2>
+              </div>
+              <div class="timeline-tools">
+                <button class="chip-btn subtle" type="button" data-action="tl-today">回今天</button>
+              </div>
+            </div>
+            <div class="tl-legend">
+              <span><i class="tl-badge is-harm">沖</i>沖・刑・害・破</span>
+              <span><i class="tl-badge">合</i>合・會</span>
+              <small>各柱相對原局與上層運程；點選串接大運→流年→流月→流日</small>
+            </div>
+            <div id="timeline-body">${renderTimeline(chart)}</div>
           </section>
 
           <section class="card watch-card reveal" style="--delay: 80ms" aria-labelledby="watch-title">
@@ -1612,6 +1633,225 @@ function renderWatch(chart, step) {
   `;
 }
 
+const TL_KIND_CHAR = { chong: '沖', xing: '刑', hai: '害', po: '破', he: '合', sanhe: '合', anhe: '合' };
+const TL_HARM_KINDS = new Set(['chong', 'xing', 'hai', 'po']);
+
+function tlNatal(chart) {
+  return WATCH_PILLAR_KEYS.map((key, i) => {
+    const pillar = chart.pillars[key];
+    return pillar ? { stem: pillar.stem, branch: pillar.branch, source: WATCH_PILLAR_LABELS[i] } : null;
+  }).filter(Boolean);
+}
+
+function tlBadges(context, stem, branch, source) {
+  const { kinds, texts } = interactionSummary(context, { stem, branch, source });
+  if (!kinds.length) return '';
+  return `<span class="tl-badges" title="${esc(texts.join('、'))}">${kinds.map((kind) => `<i class="tl-badge${TL_HARM_KINDS.has(kind) ? ' is-harm' : ''}">${TL_KIND_CHAR[kind]}</i>`).join('')}</span>`;
+}
+
+function resolveTimeline(chart) {
+  if (!state.timeline) state.timeline = { luck: state.selectedLuck || 0, year: null, monthIndex: null, dayIndex: null };
+  const tl = state.timeline;
+  const steps = chart.luck.steps;
+  if (!steps[tl.luck]) tl.luck = 0;
+  const step = steps[tl.luck];
+  const years = step.years.map((y) => y.year);
+  if (!years.includes(tl.year)) {
+    const currentYear = step.years.find((y) => y.isCurrent);
+    tl.year = currentYear ? currentYear.year : years[0];
+    tl.monthIndex = null;
+    tl.dayIndex = null;
+  }
+  const table = periodTable(chart, tl.year);
+  const nowTs = chart.current.ts;
+  if (tl.monthIndex == null || !table.months[tl.monthIndex]) {
+    const idx = table.months.findIndex((mo) => mo.startTs != null && nowTs >= mo.startTs && nowTs < mo.endTs);
+    tl.monthIndex = idx >= 0 ? idx : 0;
+    tl.dayIndex = null;
+  }
+  const month = table.months[tl.monthIndex];
+  const days = month.days;
+  if (tl.dayIndex == null || !days[tl.dayIndex]) {
+    const todayTs = Math.floor(nowTs / DAY_MS) * DAY_MS;
+    const idx = days.findIndex((d) => d.ts === todayTs);
+    tl.dayIndex = idx >= 0 ? idx : 0;
+  }
+  return { step, table, year: table.year, month, day: days[tl.dayIndex] || null };
+}
+
+function renderTimeline(chart) {
+  const { step, table, year, month, day } = resolveTimeline(chart);
+  const natal = tlNatal(chart);
+  const nowTs = chart.current.ts;
+  const todayTs = Math.floor(nowTs / DAY_MS) * DAY_MS;
+  const luckCtx = [...natal, { stem: step.stem, branch: step.branch, source: '大運' }];
+  const yearCtx = [...luckCtx, { stem: year.stem, branch: year.branch, source: '流年' }];
+  const monthCtx = [...yearCtx, { stem: month.stem, branch: month.branch, source: '流月' }];
+  const chars = (stemChar, branchChar) => `<strong class="tl-chars"><b class="${elClass(elementForStemChar(stemChar))}">${stemChar}</b><b class="${elClass(elementForBranchChar(branchChar))}">${branchChar}</b></strong>`;
+
+  const luckLane = chart.luck.steps.map((s, i) => `
+    <button class="tl-item tl-luck${i === state.timeline.luck ? ' is-active' : ''}${i === chart.current.luckIndex ? ' is-now' : ''}" type="button" data-tl-luck="${i}" aria-pressed="${i === state.timeline.luck}">
+      <span class="tl-top">${s.ageLabel}<i>${s.startYear}</i></span>
+      ${chars(s.stemChar, s.branchChar)}
+      <span class="tl-god">${s.tenGod}</span>
+      ${tlBadges(natal, s.stem, s.branch, '大運')}
+    </button>`).join('');
+
+  const yearLane = step.years.map((y) => `
+    <button class="tl-item tl-year${y.year === state.timeline.year ? ' is-active' : ''}${y.isCurrent ? ' is-now' : ''}" type="button" data-tl-year="${y.year}" aria-pressed="${y.year === state.timeline.year}">
+      <span class="tl-top">${y.year}${y.isCurrent ? '<i>今</i>' : ''}</span>
+      ${chars(y.stemChar, y.branchChar)}
+      <span class="tl-god">${y.tenGod}</span>
+      ${tlBadges(luckCtx, y.stem, y.branch, '流年')}
+    </button>`).join('');
+
+  const monthLane = table.months.map((mo, i) => {
+    const now = mo.startTs != null && nowTs >= mo.startTs && nowTs < mo.endTs;
+    return `
+    <button class="tl-item tl-month${i === state.timeline.monthIndex ? ' is-active' : ''}${now ? ' is-now' : ''}" type="button" data-tl-month="${i}" aria-pressed="${i === state.timeline.monthIndex}">
+      <span class="tl-top">${mo.name}</span>
+      ${chars(mo.stemChar, mo.branchChar)}
+      <span class="tl-god">${mo.tenGod}</span>
+      ${tlBadges(yearCtx, mo.stem, mo.branch, '流月')}
+    </button>`;
+  }).join('');
+
+  const dayLane = month.days.map((dp, i) => `
+    <button class="tl-item tl-day${i === state.timeline.dayIndex ? ' is-active' : ''}${dp.ts === todayTs ? ' is-now' : ''}" type="button" data-tl-day="${i}" aria-pressed="${i === state.timeline.dayIndex}">
+      <span class="tl-top">${dp.m}/${dp.d}${dp.ts === todayTs ? '<i>今</i>' : ''}</span>
+      ${chars(dp.stemChar, dp.branchChar)}
+      <span class="tl-god">${dp.tenGod}</span>
+      ${tlBadges(monthCtx, dp.stem, dp.branch, '流日')}
+    </button>`).join('');
+
+  const lane = (key, label, sub, items) => `
+    <div class="tl-lane" data-lane="${key}">
+      <div class="tl-lane-head"><b>${label}</b><small>${sub}</small></div>
+      <div class="tl-rail" role="group" aria-label="${label}，使用左右方向鍵切換">${items}</div>
+    </div>`;
+
+  return `
+    <div class="timeline-lanes">
+      ${lane('luck', '大運', `${chart.luck.directionLabel} · ${chart.luck.startLabel}起運`, luckLane)}
+      ${lane('year', '流年', `${step.stemChar}${step.branchChar}運 · ${step.startYear}–${step.startYear + 9}`, yearLane)}
+      ${lane('month', '流月', `${year.year}年 · 按十二節`, monthLane)}
+      ${lane('day', '流日', `${month.name} · 共 ${month.days.length} 日`, dayLane)}
+    </div>
+    <div class="tl-detail" id="tl-detail">${renderTimelineDetail(chart, step, year, month, day)}</div>
+  `;
+}
+
+function renderTimelineDetail(chart, step, year, month, day) {
+  const items = [
+    ...tlNatal(chart),
+    { stem: step.stem, branch: step.branch, source: '大運' },
+    { stem: year.stem, branch: year.branch, source: '流年' },
+    { stem: month.stem, branch: month.branch, source: '流月' },
+    ...(day ? [{ stem: day.stem, branch: day.branch, source: '流日' }] : []),
+  ];
+  const { stems, branches } = analyzeInteractions(items);
+  const chips = (list, empty) => (list.length
+    ? list.map((item) => `<span class="watch-item${TL_HARM_KINDS.has(item.kind) ? ' is-harm' : ''}" title="${esc(item.sources.join('、'))}">${item.text}</span>`).join('')
+    : `<span class="muted">${empty}</span>`);
+  const point = day ? `${day.y}年${day.m}月${day.d}日（北京時間）` : '—';
+  return `
+    <div class="tl-detail-head">
+      <b>${step.stemChar}${step.branchChar}運 · ${year.stemChar}${year.branchChar}年 · ${month.stemChar}${month.branchChar}月${day ? ` · ${day.stemChar}${day.branchChar}日` : ''}</b>
+      <small>${point}</small>
+    </div>
+    <div class="tl-detail-row"><span>天干</span><div>${chips(stems, '無合沖')}</div></div>
+    <div class="tl-detail-row"><span>地支</span><div>${chips(branches, '無沖合刑害')}</div></div>
+  `;
+}
+
+function revealTimeline() {
+  document.querySelectorAll('#timeline-body .tl-rail').forEach((rail) => {
+    const active = rail.querySelector('.tl-item.is-active');
+    if (!active) return;
+    const railRect = rail.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    if (activeRect.left < railRect.left) rail.scrollLeft += activeRect.left - railRect.left - 12;
+    else if (activeRect.right > railRect.right) rail.scrollLeft += activeRect.right - railRect.right + 12;
+  });
+}
+
+function refreshTimeline() {
+  const body = document.getElementById('timeline-body');
+  if (!body || !state.chart) return;
+  body.innerHTML = renderTimeline(state.chart);
+  revealTimeline();
+}
+
+function goTimelineToday() {
+  const chart = state.chart;
+  if (!chart) return;
+  const { year } = chart.current.year;
+  const index = chart.luck.steps.findIndex((step) => step.years.some((y) => y.year === year));
+  if (index < 0) {
+    toast('今年不在所排大運範圍內');
+    return;
+  }
+  state.timeline = { luck: index, year, monthIndex: null, dayIndex: null };
+  refreshTimeline();
+}
+
+function bindTimelineEvents() {
+  const section = document.getElementById('timeline-section');
+  if (!section) return;
+  section.addEventListener('click', (event) => {
+    if (event.target.closest('[data-action="tl-today"]')) {
+      goTimelineToday();
+      return;
+    }
+    const luckEl = event.target.closest('[data-tl-luck]');
+    if (luckEl) {
+      state.timeline = { ...state.timeline, luck: Number(luckEl.dataset.tlLuck), year: null, monthIndex: null, dayIndex: null };
+      refreshTimeline();
+      return;
+    }
+    const yearEl = event.target.closest('[data-tl-year]');
+    if (yearEl) {
+      state.timeline = { ...state.timeline, year: Number(yearEl.dataset.tlYear), monthIndex: null, dayIndex: null };
+      refreshTimeline();
+      return;
+    }
+    const monthEl = event.target.closest('[data-tl-month]');
+    if (monthEl) {
+      state.timeline = { ...state.timeline, monthIndex: Number(monthEl.dataset.tlMonth), dayIndex: null };
+      refreshTimeline();
+      return;
+    }
+    const dayEl = event.target.closest('[data-tl-day]');
+    if (dayEl) {
+      state.timeline = { ...state.timeline, dayIndex: Number(dayEl.dataset.tlDay) };
+      refreshTimeline();
+    }
+  });
+  section.addEventListener('keydown', (event) => {
+    const item = event.target.closest('.tl-item');
+    if (!item) return;
+    const rail = item.closest('.tl-rail');
+    const items = [...rail.querySelectorAll('.tl-item')];
+    const current = items.indexOf(item);
+    let next = null;
+    if (event.key === 'ArrowRight') next = (current + 1) % items.length;
+    else if (event.key === 'ArrowLeft') next = (current - 1 + items.length) % items.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = items.length - 1;
+    if (next != null) {
+      event.preventDefault();
+      const target = items[next];
+      const attr = ['data-tl-luck', 'data-tl-year', 'data-tl-month', 'data-tl-day'].find((a) => target.hasAttribute(a));
+      const value = target.getAttribute(attr);
+      target.click();
+      const fresh = section.querySelector(`[${attr}="${value}"]`);
+      fresh?.focus({ preventScroll: true });
+      fresh?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  });
+  revealTimeline();
+}
+
 function renderPalace(label, palace, note) {
   if (!palace) {
     return `
@@ -1766,6 +2006,7 @@ function bindResultEvents() {
       selectLuck(next, { focus: true });
     }
   });
+  bindTimelineEvents();
 }
 
 function focusChip(selector) {
@@ -2904,6 +3145,7 @@ function openRecord(id) {
     state.formInput = record.input;
     state.selectedLuck = defaultLuckIndex(chart);
     state.period = null;
+    state.timeline = null;
     navigate('/chart');
   } catch (err) {
     toast(err.message || '命例無法起盤');
