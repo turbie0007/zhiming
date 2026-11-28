@@ -265,8 +265,8 @@
   </main>
 
   <script type="module">
-    import { computeChart, interactionSummary } from './assets/js/bazi.js?v=20261152';
-    import { membershipActive, mergeRecords } from './assets/js/cloud.js?v=20261152';
+    import { computeChart, interactionSummary } from './assets/js/bazi.js?v=20261153';
+    import { membershipActive, mergeRecords } from './assets/js/cloud.js?v=20261153';
 
     const BASE = { gender: 'male', city: '北京', lateZi: true, trueSolar: false };
     const gz = (p) => (p ? `${p.stemChar}${p.branchChar}` : '—');
@@ -545,6 +545,56 @@
           };
         },
         expect: { a: 'remoteA', b: 'localB', c已刪: 'true', 上傳: 'b' },
+      },
+      {
+        title: '神煞完整化：戊戌日魁罡＋年月吉煞',
+        note: '甲辰 丙寅 戊戌 辛酉。日柱戊戌為魁罡；年支辰見金輿、紅艷；月支寅見福星、學堂；時干辛為月德合。',
+        input: { solar: { y: 2024, m: 2, d: 4 }, time: { h: 17, min: 0 } },
+        actual: (c) => ({
+          日魁罡: String(c.pillars.day.shensha.includes('魁罡')),
+          年金輿: String(c.pillars.year.shensha.includes('金輿')),
+          年紅艷: String(c.pillars.year.shensha.includes('紅艷煞')),
+          月福星: String(c.pillars.month.shensha.includes('福星貴人')),
+          月學堂: String(c.pillars.month.shensha.includes('學堂')),
+          時月德合: String(c.pillars.hour.shensha.includes('月德合')),
+        }),
+        expect: { 日魁罡: 'true', 年金輿: 'true', 年紅艷: 'true', 月福星: 'true', 月學堂: 'true', 時月德合: 'true' },
+      },
+      {
+        title: '神煞完整化：戊午日詞館勾煞、月柱災煞絞煞',
+        note: '己卯 丙子 戊午 戊午。日干戊詞館在午，日支午為勾煞（年支卯前三位）；月支子見災煞、絞煞。',
+        input: { solar: { y: 2000, m: 1, d: 1 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          日詞館: String(c.pillars.day.shensha.includes('詞館')),
+          日勾煞: String(c.pillars.day.shensha.includes('勾煞')),
+          月災煞: String(c.pillars.month.shensha.includes('災煞')),
+          月絞煞: String(c.pillars.month.shensha.includes('絞煞')),
+        }),
+        expect: { 日詞館: 'true', 日勾煞: 'true', 月災煞: 'true', 月絞煞: 'true' },
+      },
+      {
+        title: '神煞完整化：甲子日非魁罡、月柱學堂時柱災煞',
+        note: '己丑 癸酉 甲子 庚午。月支酉為己干學堂；丑年巳酉丑局災煞在午，時支午見災煞、紅艷；甲子日非魁罡。',
+        input: { solar: { y: 1949, m: 10, d: 1 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          月學堂: String(c.pillars.month.shensha.includes('學堂')),
+          時災煞: String(c.pillars.hour.shensha.includes('災煞')),
+          時紅艷: String(c.pillars.hour.shensha.includes('紅艷煞')),
+          日魁罡: String(c.pillars.day.shensha.includes('魁罡')),
+        }),
+        expect: { 月學堂: 'true', 時災煞: 'true', 時紅艷: 'true', 日魁罡: 'false' },
+      },
+      {
+        title: '天德貴人與天德合：丁酉年壬寅月',
+        note: '2017-02-04 已過立春，丁酉年壬寅月。寅月天德在丁，年干丁見天德貴人；天德合在壬，月干壬見天德合。',
+        input: { solar: { y: 2017, m: 2, d: 4 }, time: { h: 12, min: 0 } },
+        actual: (c) => ({
+          年柱: gz(c.pillars.year),
+          月柱: gz(c.pillars.month),
+          年天德: String(c.pillars.year.shensha.includes('天德貴人')),
+          月天德合: String(c.pillars.month.shensha.includes('天德合')),
+        }),
+        expect: { 年柱: '丁酉', 月柱: '壬寅', 年天德: 'true', 月天德合: 'true' },
       },
     ];
 

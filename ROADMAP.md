@@ -1,8 +1,8 @@
 # 知命 Roadmap
 
 更新日期：2026-11-28
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261152）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會進行中、新增全站版權聲明與 LICENSE（All Rights Reserved）；尚未送審。
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261153）
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會進行中、新增全站版權聲明與 LICENSE（All Rights Reserved）、完成神煞完整化（17→38 顆，Phase 1）；尚未送審。
 
 ## 產品原則
 
@@ -68,7 +68,7 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 
 1. **格局與用神分析**（已完成 2026-11-22）：月令取格、透干／本氣、建祿／羊刃，並以扶抑、通關、調候、病藥產生用神候選與理由。
 2. **大運流年時間軸**（已完成 2026-11-27）：命盤頁新增水平捲動四軌時間軸（大運→流年→流月→流日），點選串接、自動捲到目前並可「回今天」；各柱相對原局與上層運程標記沖合刑害（合會綠、沖刑害破紅），點開見完整天干地支互動表。重用既有 `computeChart` 運程、`periodTable` 與 `analyzeInteractions`，新增匯出 `interactionSummary`；鍵盤左右／Home／End 切換並保留 focus。純客戶端（`#/chart` hash 路由，不預渲染），已同步 iOS／Android 資產；回歸測試新增 3 例（共 20 例全通過）。
-3. **神煞完整化**：補常見神煞與查法，維持可點擊釋義。
+3. **神煞完整化**（已完成 2026-11-28）：由 17 顆擴充為 38 顆常用吉凶神煞。新增吉煞天德貴人、天德合、月德合、金輿、福星貴人、天醫、學堂、詞館；凶煞劫煞、災煞、亡神、孤辰、寡宿、喪門、勾煞、絞煞、紅艷煞、魁罡、陰陽差錯、四廢、天赦。查法表集中於 `bazi.js`，日柱專屬星（魁罡／陰陽差錯／四廢／天赦）以 `makePillar` 的 `isDay` gate，不誤標流年；`glossary.js` 補 21 條可點擊釋義（含查法與流派差異註記），`learn.js` 神煞分類表同步更新。回歸測試新增 4 例（共 26 例全通過），瀏覽器實測新煞渲染為可點擊 chip、彈窗釋義正確；版號 20261153，iOS／Android 資產已 sync。
 4. **合婚完整報告**：由目前雙盤合參延伸為合婚頁，涵蓋日柱、年柱、五行互補與溝通模式。
 5. **PDF 命書輸出**：一頁精簡版＋完整版，含免責聲明。
 6. **城市與真太陽時資料庫**：增加台灣、香港、東南亞城市，支援手動經度校正。
@@ -94,7 +94,9 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 - **命例分析**：多命例統計、家族／客戶管理（本機）。
 - **Pro 版**：PDF 命書、進階分析、同步、主題；建議一次買斷，訂閱需有持續價值。
 
-## 會員變現（網頁版優先，2026-11-27 啟動）
+## 會員變現｜專案 Collection（網頁版優先）
+
+**專案代號：Collection。** 狀態：scaffold 已完成並 push（63cb70d，2026-11-27），但**尚未 kick start——待使用者明確指示才啟動 provision 與上線**。在使用者下達啟動指令前，不建 Supabase／Stripe、不填 `cloud-config.js`、不部署 edge functions；線上會員功能維持關閉（`cloud-config.js` 留空）。
 
 決策（使用者拍板）：**本機儲存維持免費離線；US$20／年 會員解鎖「雲端儲存／跨裝置同步」；先只上網頁**。原生版維持免費本機、不接雲端（`cloudEnabled()` 於原生回傳 false），故暫不需 IAP、不需重新送審；日後原生接雲端才走商店內購。
 
@@ -104,13 +106,18 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 - **前端**：`assets/js/cloud.js` 以純 fetch 呼 GoTrue／PostgREST（不引 SDK、維持靜態 ES modules）；`cloud-config.js` 放 public-safe URL/anonKey（留空＝雲端整體停用）。命例頁新增「會員與同步」卡：登入、升級、opt-in 雲端備份開關、立即同步、管理訂閱、登出；同步為 per-record last-write-wins＋tombstone（`mergeRecords`）。
 - **隱私**：政策頁新增第三節（自選雲端會員）、生效日 2026-11-27；`PRIVACY-DECLARATIONS.md` 加註原生申報不變。
 
-已完成：schema/RLS、cloud.js、前端會員牆／opt-in／同步、三個 edge function、隱私更新、回歸測試 22 例全通過、版號 20261152、iOS／Android 資產同步。
+已完成：schema/RLS、cloud.js、前端會員牆／opt-in／同步、三個 edge function、隱私更新、回歸測試 22 例全通過、版號 20261153、iOS／Android 資產同步。
 
 **待使用者 provision（我不經手密碼/keys）**：
-1. 建 Supabase project；執行 `0001_init.sql`；Auth 設定 magic link 與 redirect URL（`https://www.myzhiming.com/`）。
-2. 建 Stripe 帳號＋$20／年 訂閱產品/price；設定 webhook 指向 `stripe-webhook` function。
-3. 填 `assets/js/cloud-config.js` 的 supabaseUrl／supabaseAnonKey；於 Supabase edge secrets 設 `STRIPE_SECRET_KEY`、`STRIPE_PRICE_ID`、`STRIPE_WEBHOOK_SECRET`、`SITE_URL`。
-4. 部署 edge functions；端到端（登入→付款→webhook→同步）待 provision 後驗證。
+
+1. **Supabase**（下一步，不用等 Apple）：
+   1. 建 project：supabase.com → New project，名稱 `zhiming`，region 選 Northeast Asia／Tokyo（離使用者近）；DB 密碼由使用者自行保管。
+   2. 建資料表：SQL Editor → 貼上 `supabase/migrations/0001_init.sql` 全部內容 → Run（建 `memberships`＋`cloud_records`＋RLS 與 `is_active_member()`）。
+   3. 設登入：Authentication → Providers → Email 開啟 magic link；URL Configuration → Site URL 填 `https://www.myzhiming.com/`，Redirect URLs 加 `https://www.myzhiming.com/`（本機測試可再加 `http://localhost:4173`）。
+   4. 拿公開金鑰：Project Settings → API → 複製 **Project URL** 與 **anon public key**（這兩個 public-safe，靠 RLS 保護）交給助理填 `cloud-config.js`。**`service_role` 等私鑰切勿貼進對話**，由使用者在後台自行設定。
+2. **Stripe**：建帳號＋$20／年 訂閱產品/price；設定 webhook 指向 `stripe-webhook` function（事件：`checkout.session.completed`、`customer.subscription.created/updated/deleted`、`invoice.payment_failed`）。
+3. **設定**：填 `assets/js/cloud-config.js` 的 supabaseUrl／supabaseAnonKey；於 Supabase edge secrets 設 `STRIPE_SECRET_KEY`、`STRIPE_PRICE_ID`、`STRIPE_WEBHOOK_SECRET`、`SITE_URL`（皆私鑰，不入 repo、不經對話）。
+4. **部署與驗證**：部署三個 edge functions；端到端（登入→付款→webhook 寫 memberships→同步）待 provision 後驗證，並確認 RLS 確實擋非會員寫入。
 
 ## 工程持續軌
 

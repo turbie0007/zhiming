@@ -1,5 +1,5 @@
-import { ARTICLES } from './learn.js?v=20261152';
-import { esc, icon } from './ui.js?v=20261152';
+import { ARTICLES } from './learn.js?v=20261153';
+import { esc, icon } from './ui.js?v=20261153';
 
 export const BRAND = '知命';
 export const SITE_NAME = '知命 · 四柱八字排盤';

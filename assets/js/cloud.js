@@ -1,7 +1,7 @@
 // 雲端會員與命例同步客戶端：以純 fetch 呼叫 Supabase GoTrue／PostgREST，
 // 不引入 SDK，維持靜態 ES modules 與離線原則（未 opted-in 或原生版完全不載入網路）。
-import { CLOUD_CONFIG } from './cloud-config.js?v=20261152';
-import { isNative } from './native.js?v=20261152';
+import { CLOUD_CONFIG } from './cloud-config.js?v=20261153';
+import { isNative } from './native.js?v=20261153';
 
 const SESSION_KEY = 'zhiming.cloud.session.v1';
 

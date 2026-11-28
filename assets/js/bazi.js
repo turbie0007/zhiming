@@ -2,13 +2,13 @@ import {
   STEMS, BRANCHES, STEM_ELEMENTS, BRANCH_ELEMENTS, ELEMENTS, ELEMENT_LABEL,
   ANIMALS, HIDDEN_STEMS, HIDDEN_WEIGHTS, NAYIN, STAGES, STAGE_START,
   JIE_MAP, CITIES, CLIMATE,
-} from './data.js?v=20261152';
+} from './data.js?v=20261153';
 import {
   mod, makeTs, tsParts, formatDate, formatLunar, solarToLunar,
   lunarToSolar, findJieBefore, findJieAfter, lichunTs, addMonths,
   lunarYearLabel, dayOfYear, lunarMonthDays, leapDays, leapMonth,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261152';
+} from './astro.js?v=20261153';
 
 const DAY_MS = 86400000;
 
@@ -30,6 +30,9 @@ const GROUP_SS = {
   yima: { shen: 2, yin: 8, si: 11, hai: 5 },
   huagai: { shen: 4, yin: 10, si: 1, hai: 7 },
   jiangxing: { shen: 0, yin: 6, si: 9, hai: 3 },
+  jiesha: { shen: 5, yin: 11, si: 2, hai: 8 },
+  zaisha: { shen: 6, yin: 0, si: 3, hai: 9 },
+  wangshen: { shen: 11, yin: 5, si: 8, hai: 2 },
 };
 const TIANYI = [[1, 7], [0, 8], [11, 9], [11, 9], [1, 7], [0, 8], [1, 7], [2, 6], [3, 5], [3, 5]];
 const TAIJI = [[0, 6], [0, 6], [3, 9], [3, 9], [1, 4, 7, 10], [1, 4, 7, 10], [2, 11], [2, 11], [5, 8], [5, 8]];
@@ -40,6 +43,26 @@ const YANGREN = [3, 2, 6, 5, 6, 5, 9, 8, 0, 11];
 const LUZHI = [2, 3, 5, 6, 5, 6, 8, 9, 11, 0];
 const HONGLUAN = [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4];
 const YUEDE = { yin: 2, shen: 8, hai: 0, si: 6 };
+const YUEDEHE = { yin: 7, shen: 3, hai: 5, si: 1 };
+// 天德貴人／天德合：以月支起，目標或為天干或為地支（['s', 干索引] / ['b', 支索引]）
+const TIANDE = [['b', 5], ['s', 6], ['s', 3], ['b', 8], ['s', 8], ['s', 7], ['b', 11], ['s', 0], ['s', 9], ['b', 2], ['s', 2], ['s', 1]];
+const TIANDEHE = [['b', 8], ['s', 1], ['s', 8], ['b', 5], ['s', 3], ['s', 2], ['b', 2], ['s', 5], ['s', 4], ['b', 11], ['s', 7], ['s', 6]];
+const JINYU = [4, 5, 7, 8, 7, 8, 10, 11, 1, 2];
+const FUXING = [[2, 0], [1], [2, 0], [11], [8], [7], [6], [5], [4], [1]];
+const HONGYAN = [6, 6, 2, 7, 4, 4, 2, 8, 7, 8];
+const GUCHEN = [2, 2, 5, 5, 5, 8, 8, 8, 11, 11, 11, 2];
+const GUASU = [10, 10, 1, 1, 1, 4, 4, 4, 7, 7, 7, 10];
+const KUIGANG = [[6, 4], [8, 4], [4, 10], [6, 10]];
+const YINYANG_CHACUO = [[2, 0], [3, 1], [4, 2], [7, 3], [8, 4], [9, 5], [2, 6], [3, 7], [4, 8], [7, 9], [8, 10], [9, 11]];
+const SIFEI = { spring: [[6, 8], [7, 9]], summer: [[8, 0], [9, 11]], autumn: [[0, 2], [1, 3]], winter: [[2, 6], [3, 5]] };
+const TIANSHE = { spring: [4, 2], summer: [0, 6], autumn: [4, 8], winter: [0, 0] };
+
+function seasonOf(monthBranch) {
+  if ([2, 3, 4].includes(monthBranch)) return 'spring';
+  if ([5, 6, 7].includes(monthBranch)) return 'summer';
+  if ([8, 9, 10].includes(monthBranch)) return 'autumn';
+  return 'winter';
+}
 
 const STEM_HE = [[0, 5], [1, 6], [2, 7], [3, 8], [4, 9]];
 const STEM_HE_ELEMENT = ['earth', 'metal', 'water', 'wood', 'fire'];
@@ -397,6 +420,36 @@ function shenshaFor(pillar, ctx) {
   if (YUEDE[triadGroup(monthBranch)] === pillar.stem) push('月德貴人');
   if (mod(yearBranch - 2, 12) === b) push('吊客');
 
+  const tiande = TIANDE[monthBranch];
+  if (tiande && ((tiande[0] === 's' && pillar.stem === tiande[1]) || (tiande[0] === 'b' && b === tiande[1]))) push('天德貴人');
+  const tiandehe = TIANDEHE[monthBranch];
+  if (tiandehe && ((tiandehe[0] === 's' && pillar.stem === tiandehe[1]) || (tiandehe[0] === 'b' && b === tiandehe[1]))) push('天德合');
+  if (YUEDEHE[triadGroup(monthBranch)] === pillar.stem) push('月德合');
+  if (stems.some((s) => JINYU[s] === b)) push('金輿');
+  if (stems.some((s) => FUXING[s].includes(b))) push('福星貴人');
+  if (mod(monthBranch - 1, 12) === b) push('天醫');
+  if (stems.some((s) => STAGE_START[s][0] === b)) push('學堂');
+  if (stems.some((s) => mod(LUZHI[s] + 1, 12) === b)) push('詞館');
+
+  for (const [key, label] of [['jiesha', '劫煞'], ['zaisha', '災煞'], ['wangshen', '亡神']]) {
+    if (groups.some((g) => GROUP_SS[key][g] === b)) push(label);
+  }
+  if (GUCHEN[yearBranch] === b) push('孤辰');
+  if (GUASU[yearBranch] === b) push('寡宿');
+  if (mod(yearBranch + 2, 12) === b) push('喪門');
+  if (mod(yearBranch + 3, 12) === b) push('勾煞');
+  if (mod(yearBranch - 3, 12) === b) push('絞煞');
+  if (stems.some((s) => HONGYAN[s] === b)) push('紅艷煞');
+
+  if (pillar.isDay) {
+    if (KUIGANG.some(([s, br]) => s === pillar.stem && br === b)) push('魁罡');
+    if (YINYANG_CHACUO.some(([s, br]) => s === pillar.stem && br === b)) push('陰陽差錯');
+    const season = seasonOf(monthBranch);
+    if (SIFEI[season].some(([s, br]) => s === pillar.stem && br === b)) push('四廢');
+    const ts = TIANSHE[season];
+    if (ts[0] === pillar.stem && ts[1] === b) push('天赦');
+  }
+
   if (ctx.dayKong.includes(b)) push('空亡');
   else if (ctx.yearKong.includes(b)) push('年空');
 
@@ -542,7 +595,7 @@ function makePillar(idx, dayStem, ctx, isDay = false) {
     stage: getStage(dayStem, branch),
     tenGod: isDay ? '日主' : getTenGod(dayStem, stem),
     hidden,
-    shensha: ctx ? shenshaFor({ stem, branch }, ctx) : [],
+    shensha: ctx ? shenshaFor({ stem, branch, isDay }, ctx) : [],
   };
 }
 
