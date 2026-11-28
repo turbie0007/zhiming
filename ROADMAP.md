@@ -1,7 +1,7 @@
 # 知命 Roadmap
 
 更新日期：2026-11-27
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261150）
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261151）
 目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；尚未送審。
 
 ## 產品原則
@@ -42,7 +42,7 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 
 初次設定 Android 可在 macOS 雙擊 `scripts/android-signing.command`：密碼在本機 Terminal 隱藏輸入，以 RSA 3072／PKCS12 建立有效期 10,000 天的 upload key，存至 `~/.zhiming-signing/zhiming-upload.p12`（別名 `zhiming-upload`），不覆寫既有金鑰；可接著建立 AAB 並驗證簽章。此引導使用相同的 keystore／key 密碼，僅暫存在程序環境，結束後清除，不會自動上傳。金鑰檔與密碼仍須由著作權人分別安全備份。
 
-2026-11-23 已確認尚無 Android upload key、尚未加入付費 Apple Developer Program；目前僅備妥設定引導，金鑰建立／正式簽章結果與 Apple 入會仍待使用者操作。Apple 入會需自行完成雙重認證、身分核驗、條款與付款；個人會員的法定姓名會作為 App Store 賣方名稱，組織會員則需合法實體與適用的 D-U-N-S 資料。官方說明：[Apple 入會](https://developer.apple.com/programs/enroll/)、[Android 簽署](https://developer.android.com/studio/publish/app-signing)。
+2026-11-23 已確認尚無 Android upload key、尚未加入付費 Apple Developer Program；目前僅備妥設定引導，金鑰建立／正式簽章結果與 Apple 入會仍待使用者操作。**2026-11-28 更新：Apple Developer Program 入會進行中（US$99／年）；Android upload key 仍未建立。** Apple 入會需自行完成雙重認證、身分核驗、條款與付款；個人會員的法定姓名會作為 App Store 賣方名稱，組織會員則需合法實體與適用的 D-U-N-S 資料。官方說明：[Apple 入會](https://developer.apple.com/programs/enroll/)、[Android 簽署](https://developer.android.com/studio/publish/app-signing)。
 
 - **Android**：由著作權人建立／保管 upload keystore，放在專案之外並離線備份。透過本機密碼管理器或隱藏輸入設定環境變數 `ZHIMING_KEYSTORE_FILE`（絕對路徑）、`ZHIMING_KEYSTORE_PASSWORD`、`ZHIMING_KEY_ALIAS`、`ZHIMING_KEY_PASSWORD`，再執行 `npm run release:android`。請勿把密碼貼到對話、命令歷史或專案檔案；不要使用 Gradle `--debug`／`--scan` 公開建置環境。
 - **iOS**：先在 Xcode 設好 Apple Developer 帳號、有效簽署憑證與 App／Widget provisioning profiles；設定 `ZHIMING_APPLE_TEAM_ID`，再執行 `npm run release:ios`。App 與 Widget 必須屬於同一 Team。此流程不會執行 `-allowProvisioningUpdates` 或自動上傳；完成後仍需在 Organizer 驗證／匯出，再由使用者決定是否上傳 TestFlight。
@@ -67,7 +67,7 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 目標：讓進階使用者覺得夠專業。
 
 1. **格局與用神分析**（已完成 2026-11-22）：月令取格、透干／本氣、建祿／羊刃，並以扶抑、通關、調候、病藥產生用神候選與理由。
-2. **大運流年時間軸**（已完成 2026-11-27）：命盤頁新增水平捲動四軌時間軸（大運→流年→流月→流日），點選串接、自動捲到目前並可「回今天」；各柱相對原局與上層運程標記沖合刑害（合會綠、沖刑害破紅），點開見完整天干地支互動表。重用既有 `computeChart` 運程、`periodTable` 與 `analyzeInteractions`，新增导出 `interactionSummary`；鍵盤左右／Home／End 切換並保留 focus。純客戶端（`#/chart` hash 路由，不預渲染），已同步 iOS／Android 資產；回归測試新增 3 例（共 20 例全通過）。
+2. **大運流年時間軸**（已完成 2026-11-27）：命盤頁新增水平捲動四軌時間軸（大運→流年→流月→流日），點選串接、自動捲到目前並可「回今天」；各柱相對原局與上層運程標記沖合刑害（合會綠、沖刑害破紅），點開見完整天干地支互動表。重用既有 `computeChart` 運程、`periodTable` 與 `analyzeInteractions`，新增匯出 `interactionSummary`；鍵盤左右／Home／End 切換並保留 focus。純客戶端（`#/chart` hash 路由，不預渲染），已同步 iOS／Android 資產；回歸測試新增 3 例（共 20 例全通過）。
 3. **神煞完整化**：補常見神煞與查法，維持可點擊釋義。
 4. **合婚完整報告**：由目前雙盤合參延伸為合婚頁，涵蓋日柱、年柱、五行互補與溝通模式。
 5. **PDF 命書輸出**：一頁精簡版＋完整版，含免責聲明。
@@ -93,6 +93,24 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 - **擇日模組**：依用途（簽約、搬遷、開市）篩選日期，與命盤結合。
 - **命例分析**：多命例統計、家族／客戶管理（本機）。
 - **Pro 版**：PDF 命書、進階分析、同步、主題；建議一次買斷，訂閱需有持續價值。
+
+## 會員變現（網頁版優先，2026-11-27 啟動）
+
+決策（使用者拍板）：**本機儲存維持免費離線；US$20／年 會員解鎖「雲端儲存／跨裝置同步」；先只上網頁**。原生版維持免費本機、不接雲端（`cloudEnabled()` 於原生回傳 false），故暫不需 IAP、不需重新送審；日後原生接雲端才走商店內購。
+
+架構（前端維持 GitHub Pages／自訂網域）：
+- **Supabase**：Auth（Email magic link）＋Postgres＋RLS。`supabase/migrations/0001_init.sql` 建 `memberships`（僅伺服器 webhook 可寫、本人可讀）與 `cloud_records`（本人可讀；insert/update/delete 需 `is_active_member()`，於 RLS 執法，非只前端）。
+- **Stripe**：`supabase/functions/` 三個 edge function——`create-checkout`（$20／年 Checkout）、`create-portal`（續訂／取消）、`stripe-webhook`（驗簽→寫 memberships）。Stripe secret／webhook secret 只放 edge secrets，不入 repo。
+- **前端**：`assets/js/cloud.js` 以純 fetch 呼 GoTrue／PostgREST（不引 SDK、維持靜態 ES modules）；`cloud-config.js` 放 public-safe URL/anonKey（留空＝雲端整體停用）。命例頁新增「會員與同步」卡：登入、升級、opt-in 雲端備份開關、立即同步、管理訂閱、登出；同步為 per-record last-write-wins＋tombstone（`mergeRecords`）。
+- **隱私**：政策頁新增第三節（自選雲端會員）、生效日 2026-11-27；`PRIVACY-DECLARATIONS.md` 加註原生申報不變。
+
+已完成：schema/RLS、cloud.js、前端會員牆／opt-in／同步、三個 edge function、隱私更新、回歸測試 22 例全通過、版號 20261151、iOS／Android 資產同步。
+
+**待使用者 provision（我不經手密碼/keys）**：
+1. 建 Supabase project；執行 `0001_init.sql`；Auth 設定 magic link 與 redirect URL（`https://www.myzhiming.com/`）。
+2. 建 Stripe 帳號＋$20／年 訂閱產品/price；設定 webhook 指向 `stripe-webhook` function。
+3. 填 `assets/js/cloud-config.js` 的 supabaseUrl／supabaseAnonKey；於 Supabase edge secrets 設 `STRIPE_SECRET_KEY`、`STRIPE_PRICE_ID`、`STRIPE_WEBHOOK_SECRET`、`SITE_URL`。
+4. 部署 edge functions；端到端（登入→付款→webhook→同步）待 provision 後驗證。
 
 ## 工程持續軌
 

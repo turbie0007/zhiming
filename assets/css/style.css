@@ -4645,6 +4645,75 @@ body:has(.update-banner:not([hidden])) .toast {
   }
 }
 
+.cloud-lede {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.cloud-signin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.cloud-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 220px;
+  color: var(--ink-3);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.cloud-field input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.cloud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.cloud-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cloud-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--cinnabar);
+}
+
+.cloud-note {
+  margin: 12px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.cloud-note a {
+  color: var(--cinnabar);
+}
+
 @media print {
   :root,
   :root[data-theme="dark"] {
@@ -4686,6 +4755,7 @@ body:has(.update-banner:not([hidden])) .toast {
   .card-link,
   .today-btn,
   .timeline-card,
+  .cloud-card,
   .chart-card .chip-btn {
     display: none !important;
   }

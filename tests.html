@@ -265,7 +265,8 @@
   </main>
 
   <script type="module">
-    import { computeChart, interactionSummary } from './assets/js/bazi.js?v=20261150';
+    import { computeChart, interactionSummary } from './assets/js/bazi.js?v=20261151';
+    import { membershipActive, mergeRecords } from './assets/js/cloud.js?v=20261151';
 
     const BASE = { gender: 'male', city: '北京', lateZi: true, trueSolar: false };
     const gz = (p) => (p ? `${p.stemChar}${p.branchChar}` : '—');
@@ -504,6 +505,46 @@
           return { 種類: r.kinds.join(','), 有害: String(r.harm), 文字數: String(r.texts.length) };
         },
         expect: { 種類: '', 有害: 'false', 文字數: '0' },
+      },
+      {
+        title: '會員資格：active 且未過期才有效',
+        note: 'membershipActive 只認 status=active 且 current_period_end 在未來；過期、欠費、無資料皆非會員。',
+        run: () => {
+          const future = new Date(Date.now() + 86400000).toISOString();
+          const past = new Date(Date.now() - 86400000).toISOString();
+          return {
+            有效: String(membershipActive({ status: 'active', current_period_end: future })),
+            過期: String(membershipActive({ status: 'active', current_period_end: past })),
+            欠費: String(membershipActive({ status: 'past_due', current_period_end: future })),
+            無: String(membershipActive(null)),
+          };
+        },
+        expect: { 有效: 'true', 過期: 'false', 欠費: 'false', 無: 'false' },
+      },
+      {
+        title: '雲端同步：last-write-wins 合併與 tombstone',
+        note: 'remote 較新則覆蓋本機（a）；本機較新則保留並列入上傳（b）；remote tombstone 較新則刪除本機（c）。',
+        run: () => {
+          const local = [
+            { id: 'a', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', note: 'localA' },
+            { id: 'b', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-01T00:00:00Z', note: 'localB' },
+            { id: 'c', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', note: 'localC' },
+          ];
+          const remote = [
+            { record_id: 'a', payload: { note: 'remoteA' }, updated_at: '2026-02-01T00:00:00Z', deleted: false },
+            { record_id: 'b', payload: { note: 'remoteB' }, updated_at: '2026-02-01T00:00:00Z', deleted: false },
+            { record_id: 'c', payload: {}, updated_at: '2026-02-01T00:00:00Z', deleted: true },
+          ];
+          const r = mergeRecords(local, remote);
+          const byId = Object.fromEntries(r.merged.map((x) => [x.id, x.note]));
+          return {
+            a: byId.a,
+            b: byId.b,
+            c已刪: String(byId.c === undefined),
+            上傳: r.toPush.map((x) => x.record_id).join(','),
+          };
+        },
+        expect: { a: 'remoteA', b: 'localB', c已刪: 'true', 上傳: 'b' },
       },
     ];
 

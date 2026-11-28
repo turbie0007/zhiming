@@ -1,4 +1,4 @@
-const VERSION = 'zhiming-20261150';
+const VERSION = 'zhiming-20261151';
 const PRECACHE = [
   './',
   './index.html',
@@ -8,17 +8,19 @@ const PRECACHE = [
   './assets/icons/icon-512.png',
   './assets/icons/icon-1024.png',
   './assets/icons/apple-touch-icon.png',
-  './assets/css/style.css?v=20261150',
-  './assets/js/app.js?v=20261150',
-  './assets/js/astro.js?v=20261150',
-  './assets/js/bazi.js?v=20261150',
-  './assets/js/data.js?v=20261150',
-  './assets/js/glossary.js?v=20261150',
-  './assets/js/learn.js?v=20261150',
-  './assets/js/native.js?v=20261150',
-  './assets/js/pages.js?v=20261150',
-  './assets/js/solar-terms.js?v=20261150',
-  './assets/js/ui.js?v=20261150',
+  './assets/css/style.css?v=20261151',
+  './assets/js/app.js?v=20261151',
+  './assets/js/astro.js?v=20261151',
+  './assets/js/bazi.js?v=20261151',
+  './assets/js/cloud.js?v=20261151',
+  './assets/js/cloud-config.js?v=20261151',
+  './assets/js/data.js?v=20261151',
+  './assets/js/glossary.js?v=20261151',
+  './assets/js/learn.js?v=20261151',
+  './assets/js/native.js?v=20261151',
+  './assets/js/pages.js?v=20261151',
+  './assets/js/solar-terms.js?v=20261151',
+  './assets/js/ui.js?v=20261151',
 ];
 // Written by scripts/build-web.mjs. Kept best-effort so a dev server that only serves the
 // source tree can still install the shell cache.

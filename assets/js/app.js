@@ -1,23 +1,27 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261150';
+} from './data.js?v=20261151';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, interactionSummary, periodTable, hourPeriod,
-} from './bazi.js?v=20261150';
+} from './bazi.js?v=20261151';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261150';
+} from './astro.js?v=20261151';
 import {
   isNative, haptic, shareNative, notificationPermission,
   requestNotificationPermission, scheduleNotifications, cancelNotifications, syncStatusBar,
-} from './native.js?v=20261150';
-import { ARTICLES } from './learn.js?v=20261150';
-import { GLOSSARY } from './glossary.js?v=20261150';
-import { esc, icon } from './ui.js?v=20261150';
-import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261150';
+} from './native.js?v=20261151';
+import { ARTICLES } from './learn.js?v=20261151';
+import { GLOSSARY } from './glossary.js?v=20261151';
+import { esc, icon } from './ui.js?v=20261151';
+import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261151';
+import {
+  cloudEnabled, membershipActive, captureRedirectSession, currentUser,
+  signInWithEmail, signOut, fetchMembership, pullRecords, pushRecords, mergeRecords, invokeBilling,
+} from './cloud.js?v=20261151';
 
 const STORAGE = {
   records: 'zhiming.records.v3',
@@ -27,6 +31,8 @@ const STORAGE = {
   theme: 'zhiming.theme.v1',
   recordsSort: 'zhiming.recordsSort.v1',
   reminders: 'zhiming.reminders.v1',
+  cloudSync: 'zhiming.cloudSync.v1',
+  cloudLastSync: 'zhiming.cloudLastSync.v1',
 };
 
 const MAX_RECORDS = 500;
@@ -72,6 +78,7 @@ const state = {
   recordSelect: false,
   recordSelection: [],
   compare: { a: null, b: null },
+  cloud: { membership: null, busy: false, email: '', loaded: false },
 };
 
 const app = document.getElementById('app');
@@ -2282,6 +2289,167 @@ function backupNoticeHtml(records) {
     </div>`;
 }
 
+function cloudSyncOn() {
+  try {
+    return localStorage.getItem(STORAGE.cloudSync) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setCloudSync(on) {
+  try {
+    localStorage.setItem(STORAGE.cloudSync, on ? '1' : '0');
+  } catch {
+    // storage may be unavailable
+  }
+}
+
+function cloudMember() {
+  return membershipActive(state.cloud.membership);
+}
+
+async function refreshCloudMembership() {
+  if (!cloudEnabled()) return;
+  try {
+    state.cloud.membership = await fetchMembership();
+  } catch {
+    state.cloud.membership = null;
+  }
+  state.cloud.loaded = true;
+}
+
+function updateCloudCard() {
+  const el = document.getElementById('cloud-card');
+  if (el) el.outerHTML = cloudCardHtml();
+}
+
+function cloudCardHtml() {
+  if (!cloudEnabled()) return '';
+  const user = currentUser();
+  const member = cloudMember();
+  const sync = cloudSyncOn();
+  const end = state.cloud.membership?.current_period_end;
+  const endText = end ? new Date(end).toLocaleDateString('zh-TW') : '';
+  let body;
+  if (!user) {
+    body = `
+      <p class="cloud-lede">本機保存免費、離線可用。會員（US$20／年）解鎖雲端備份與跨裝置同步；命例上傳前需你明確同意。</p>
+      <form class="cloud-signin" id="cloud-signin">
+        <label class="cloud-field"><span>Email</span>
+          <input type="email" name="email" required placeholder="you@example.com" autocomplete="email" value="${esc(state.cloud.email)}">
+        </label>
+        <button class="chip-btn" type="button" data-action="cloud-signin">${icon('arrowRight', 15)} 寄送登入連結</button>
+      </form>
+      <p class="cloud-note">以 Email magic link 登入／註冊，無需密碼。詳見<a href="${linkFor('/privacy')}">隱私政策</a>。</p>`;
+  } else if (!member) {
+    body = `
+      <p class="cloud-lede">已登入 <b>${esc(user.email || '')}</b>。尚未開通會員：雲端備份與同步需會員（US$20／年）。</p>
+      <div class="cloud-actions">
+        <button class="chip-btn" type="button" data-action="cloud-upgrade">${icon('spark', 15)} 升級會員 US$20／年</button>
+        <button class="chip-btn subtle" type="button" data-action="cloud-signout">登出</button>
+      </div>`;
+  } else {
+    body = `
+      <p class="cloud-lede">會員有效至 <b>${esc(endText)}</b>。雲端備份需你同意後才上傳；可隨時關閉。</p>
+      <div class="cloud-actions">
+        <label class="cloud-toggle"><input type="checkbox" data-action="cloud-toggle" ${sync ? 'checked' : ''}> 啟用雲端備份／同步</label>
+        <button class="chip-btn subtle" type="button" data-action="cloud-sync" ${sync ? '' : 'disabled'}>立即同步</button>
+        <button class="chip-btn subtle" type="button" data-action="cloud-portal">管理訂閱</button>
+        <button class="chip-btn subtle" type="button" data-action="cloud-signout">登出</button>
+      </div>
+      <p class="cloud-note" id="cloud-status" aria-live="polite"></p>`;
+  }
+  return `
+    <section class="card cloud-card reveal" id="cloud-card" aria-labelledby="cloud-title">
+      <div class="card-head"><div><p class="card-kicker">雲端備份</p><h2 id="cloud-title">會員與同步</h2></div></div>
+      ${body}
+    </section>`;
+}
+
+let cloudSyncTimer = null;
+function scheduleCloudSync() {
+  if (!cloudEnabled() || !cloudSyncOn() || !cloudMember()) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => { syncCloud({ silent: true }); }, 1500);
+}
+
+async function syncCloud({ silent = false } = {}) {
+  if (!cloudEnabled() || !cloudSyncOn() || !cloudMember() || state.cloud.busy) return;
+  state.cloud.busy = true;
+  const status = document.getElementById('cloud-status');
+  if (status && !silent) status.textContent = '同步中…';
+  try {
+    let since = null;
+    try {
+      since = localStorage.getItem(STORAGE.cloudLastSync) || null;
+    } catch {
+      since = null;
+    }
+    const remote = await pullRecords(since);
+    const { merged, toPush } = mergeRecords(state.records, remote);
+    if (toPush.length) await pushRecords(toPush);
+    state.records = merged;
+    persistRecords();
+    try {
+      localStorage.setItem(STORAGE.cloudLastSync, new Date().toISOString());
+    } catch {
+      // storage may be unavailable
+    }
+    if (status) status.textContent = `已同步（本機 ${merged.length} 張）`;
+    renderRecords();
+    if (!silent) toast('雲端同步完成');
+  } catch (err) {
+    if (status) status.textContent = `同步失敗：${esc(err.message)}`;
+    if (!silent) toast(`同步失敗：${err.message}`);
+  } finally {
+    state.cloud.busy = false;
+  }
+}
+
+async function cloudSignIn() {
+  const input = document.querySelector('#cloud-signin input[name="email"]');
+  const email = (input?.value || '').trim();
+  if (!email) {
+    toast('請輸入 Email');
+    return;
+  }
+  state.cloud.email = email;
+  try {
+    await signInWithEmail(email, `${location.origin}${BASE}`);
+    toast('登入連結已寄出，請收信點擊');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function cloudUpgrade() {
+  try {
+    const { url } = await invokeBilling('create-checkout');
+    if (url) location.href = url;
+    else toast('無法建立付款頁');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function cloudPortal() {
+  try {
+    const { url } = await invokeBilling('create-portal');
+    if (url) location.href = url;
+    else toast('無法開啟訂閱管理');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function cloudSignOut() {
+  await signOut();
+  state.cloud.membership = null;
+  updateCloudCard();
+  toast('已登出');
+}
+
 function renderRecords() {
   setAppHead('知命 · 命例', '本機保存的命例、標籤與備註。');
   state.records = loadRecords();
@@ -2393,9 +2561,10 @@ function renderRecords() {
       <header class="page-head reveal">
         <p class="eyebrow"><span class="eyebrow-line"></span>命例</p>
         <h1>已存的命盤</h1>
-        <p class="page-lede">命例只保存在當前瀏覽器中。清除站點數據或將瀏覽器記錄遷移，都會讓它們消失；可隨時導出 JSON 備份。</p>
+        <p class="page-lede">命例預設只保存在當前瀏覽器中。清除站點數據或將瀏覽器記錄遷移，都會讓它們消失；可隨時導出 JSON 備份，或自選雲端會員備份到雲端。</p>
       </header>
       ${backupNoticeHtml(state.records)}
+      ${cloudCardHtml()}
       <div class="records-toolbar reveal">
         <div class="records-toolbar-main">
           <span id="record-count" aria-live="polite">共 ${state.records.length} 張命盤</span>
@@ -2462,11 +2631,13 @@ function saveRecordMeta(id) {
   record.tags = tags;
   record.note = note;
   record.folder = folder;
+  record.updatedAt = new Date().toISOString();
   if (!persistRecords()) {
     toast('瀏覽器存儲不可用，未能保存');
     return;
   }
   renderRecords();
+  scheduleCloudSync();
   toast('已更新命例');
 }
 
@@ -2535,6 +2706,22 @@ function bindRecordTools() {
       const file = fileInput.files?.[0];
       fileInput.value = '';
       if (file) importRecords(file);
+    });
+  }
+  const cloudSignin = document.getElementById('cloud-signin');
+  if (cloudSignin) {
+    cloudSignin.addEventListener('submit', (event) => {
+      event.preventDefault();
+      cloudSignIn();
+    });
+  }
+  const cloudToggle = document.querySelector('[data-action="cloud-toggle"]');
+  if (cloudToggle) {
+    cloudToggle.addEventListener('change', () => {
+      setCloudSync(cloudToggle.checked);
+      updateCloudCard();
+      if (cloudToggle.checked) syncCloud();
+      else toast('已關閉雲端備份');
     });
   }
 }
@@ -2908,6 +3095,7 @@ function saveCurrent() {
     id,
     input,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     tags: [],
     note: '',
     folder: '',
@@ -2917,6 +3105,7 @@ function saveCurrent() {
     toast('儲存空間不足，未能保存；請先匯出備份');
     return;
   }
+  scheduleCloudSync();
   haptic('MEDIUM');
   toast(twin
     ? `已保存；與「${twin.input.name || '未具名'}」出生資料相同`
@@ -3159,6 +3348,9 @@ function deleteRecord(id, button) {
   if (button?.dataset.confirm === '1') {
     state.records = state.records.filter((r) => r.id !== id);
     persistRecords();
+    if (cloudSyncOn() && cloudMember()) {
+      pushRecords([{ record_id: id, payload: {}, updated_at: new Date().toISOString(), deleted: true }]).catch(() => {});
+    }
     renderRecords();
     toast('命例已刪除');
     return;
@@ -3205,6 +3397,11 @@ function handleAction(action, target) {
       if (target) target.textContent = state.compact ? '展開詳盤' : '切換簡盤';
       break;
     }
+    case 'cloud-signin': cloudSignIn(); break;
+    case 'cloud-upgrade': cloudUpgrade(); break;
+    case 'cloud-portal': cloudPortal(); break;
+    case 'cloud-signout': cloudSignOut(); break;
+    case 'cloud-sync': syncCloud(); break;
     case 'export-records': exportRecords(); break;
     case 'import-records': document.getElementById('records-import')?.click(); break;
     case 'open-record': openRecord(target.dataset.id); break;
@@ -3388,6 +3585,12 @@ if (isHosted() && location.hash.length > 1 && PATH_ROUTES.has(currentPath())) {
 }
 route();
 syncSolarTermReminders().catch(() => {});
+const cloudCaptured = captureRedirectSession();
+if (cloudCaptured) navigate('/records');
+refreshCloudMembership().then(() => {
+  updateCloudCard();
+  if (cloudMember() && cloudSyncOn()) scheduleCloudSync();
+});
 
 function setupServiceWorker() {
   if (window.Capacitor?.isNativePlatform?.()) return;
