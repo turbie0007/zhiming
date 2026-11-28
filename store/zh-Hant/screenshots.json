@@ -2,10 +2,10 @@
   "locale": "zh-Hant",
   "status": "browser-draft-not-for-submission",
   "sourceType": "Chrome responsive web capture, not native iOS or Android",
-  "capturedAt": "2026-11-26T14:37:44.988Z",
+  "capturedAt": "2026-11-28T13:21:16.370Z",
   "appVersion": "1.0.0",
   "nativeBuild": 2,
-  "webVersion": "20261149",
+  "webVersion": "20261155",
   "demoData": "All names, birth inputs, notes and records are fictional fixtures in an isolated browser profile.",
   "limitations": [
     "No native status bars, safe-area insets, platform fonts or system dialogs are represented.",
@@ -13,10 +13,10 @@
     "Native widgets, notifications and sharing are not simulated."
   ],
   "sources": {
-    "index.html": "415ea91d9ddbc04ff5360d77205578a0c9cd4dc5fc1805f0bbc15f13e513774d",
-    "assets/js/app.js": "5d59ca3e0b180b56d16bdb8f6766458f2367c5618de0f810558d17bb2eed6501",
-    "assets/css/style.css": "31e6cf388bfda5250a3ba55eb73510cad931b1b4ac28de2332384ca3d89d6d3b",
-    "sw.js": "bdc52c2ed53560620b35ffa4c5ee3f914dcfef1051ed8a03700f1beb3e9f6caf"
+    "index.html": "86e2aefc8bc4e2b9a64155606ae6ca171cd3e516a8118c3cb08de779673d73a4",
+    "assets/js/app.js": "4a36810679b0c0d8eed453b9a4933827ef3d817b92fc928b396412e0849ad38e",
+    "assets/css/style.css": "713f993e4d9b0dae7f2652b140bc00330fbb68e3ff2047fc1fb0f30053d2eec2",
+    "sw.js": "3c3ac868ac2af185fc13d2abbfc75a30f0f4ab03df2beb02b3eeec35ad4f6ad0"
   },
   "formats": [
     {

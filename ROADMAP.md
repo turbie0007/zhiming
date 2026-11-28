@@ -1,8 +1,8 @@
 # 知命 Roadmap
 
 更新日期：2026-11-28
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261153）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會進行中、新增全站版權聲明與 LICENSE（All Rights Reserved）、完成神煞完整化（17→38 顆，Phase 1）；尚未送審。
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261155）
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會已完成、新增全站版權聲明與 LICENSE（All Rights Reserved）、完成神煞完整化（17→38 顆，Phase 1）、iOS build 1.0.0 (2) 已上傳 App Store Connect（記錄名稱知命－八字排盤）；尚未送審。
 
 ## 產品原則
 
@@ -19,10 +19,10 @@
 | --- | --- | --- |
 | Apple 4.2 原生功能 | 桌面小工具、節氣／流日通知、分享、觸覺回饋 | 避免退件，最高優先（四項均已完成；小工具提供今日干支、農曆與生肖） |
 | 隱私合規 | `PrivacyInfo.xcprivacy`、隱私政策頁、Android Data Safety | 送審必要（清單與政策頁已完成；兩商店申報答案見 `PRIVACY-DECLARATIONS.md`，待公開政策網址後填入主控台） |
-| 簽署與發布 | Android release keystore＋AAB；iOS Archive／TestFlight | 本機建置流程已完成；未簽署 AAB／iOS 裝置 Archive 已驗證；正式簽署、TestFlight／Play 上傳仍待完成 |
+| 簽署與發布 | Android release keystore＋AAB；iOS Archive／TestFlight | iOS 簽署 Archive 與 App Store 上傳已完成（2026-11-28，Team HJDU65G2Z9、實機註冊後，build 1.0.0 (2)）；TestFlight 處理與出口合規待完成；Android 正式簽署與 Play 上傳仍待完成 |
 | 實機 QA | iPhone／Android 各一輪，含離線、背景、旋轉 | 降低負評 |
 | 搜尋引擎與部署 | 可爬路徑、預渲染、metadata、sitemap | 已完成並上線：12 頁預渲染、真實路徑、per-page title/description/canonical、JSON-LD、robots.txt、sitemap.xml（見下方「搜尋引擎與預渲染」）。2026-11-27 經 `.github/workflows/pages.yml` 部署，自訂網域 `https://www.myzhiming.com/` 已生效（`site.config.json` url＝該網域、basePath＝`/`；repo 根 `CNAME`；Pages cname 經 API 設定、https_enforced＝true）。DNS：www CNAME→turbie0007.github.io、apex A/AAAA→GitHub Pages IPs（Namecheap）。裸網域 https 憑證由 GitHub 非同步核發中，http 裸網域已 301 轉 www |
-| 商店素材 | 截圖、文案、關鍵字、App 圖示 | 繁體中文雙商店文案、Google Play 主題圖片與圖示已完成；18 張原生截圖（iOS iPhone 17、iPad Pro 13 吋 M5、Android Pixel 5）已擷取並通過驗證，見 [素材預覽](store/zh-Hant/index.html) 與 [文案](store/zh-Hant/listing-copy.md)。字數、尺寸及圖片格式已驗證；送審前仍須完成實機 QA，補齊支援信箱／網址、公開隱私政策網址及著作權欄位；尚未上傳 |
+| 商店素材 | 截圖、文案、關鍵字、App 圖示 | 繁體中文雙商店文案、Google Play 主題圖片與圖示已完成；18 張原生截圖（iOS iPhone 17、iPad Pro 13 吋 M5、Android Pixel 5）已擷取並通過驗證，見 [素材預覽](store/zh-Hant/index.html) 與 [文案](store/zh-Hant/listing-copy.md)。字數、尺寸及圖片格式已驗證（2026-11-28 以 web 20261155 重拍）；送審前仍須完成實機 QA，補齊支援信箱／網址、公開隱私政策網址及著作權欄位；iOS build 已上傳、尚未送審 |
 
 ### 本機發布建置（2026-11-23）
 
@@ -42,16 +42,16 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 
 初次設定 Android 可在 macOS 雙擊 `scripts/android-signing.command`：密碼在本機 Terminal 隱藏輸入，以 RSA 3072／PKCS12 建立有效期 10,000 天的 upload key，存至 `~/.zhiming-signing/zhiming-upload.p12`（別名 `zhiming-upload`），不覆寫既有金鑰；可接著建立 AAB 並驗證簽章。此引導使用相同的 keystore／key 密碼，僅暫存在程序環境，結束後清除，不會自動上傳。金鑰檔與密碼仍須由著作權人分別安全備份。
 
-2026-11-23 已確認尚無 Android upload key、尚未加入付費 Apple Developer Program；目前僅備妥設定引導，金鑰建立／正式簽章結果與 Apple 入會仍待使用者操作。**2026-11-28 更新：Apple Developer Program 入會進行中（US$99／年）；Android upload key 仍未建立。** Apple 入會需自行完成雙重認證、身分核驗、條款與付款；個人會員的法定姓名會作為 App Store 賣方名稱，組織會員則需合法實體與適用的 D-U-N-S 資料。官方說明：[Apple 入會](https://developer.apple.com/programs/enroll/)、[Android 簽署](https://developer.android.com/studio/publish/app-signing)。
+2026-11-23 已確認尚無 Android upload key、尚未加入付費 Apple Developer Program；目前僅備妥設定引導，金鑰建立／正式簽章結果與 Apple 入會仍待使用者操作。**2026-11-28 更新：Apple Developer Program 入會已完成；Android upload key 仍未建立。** Apple 入會需自行完成雙重認證、身分核驗、條款與付款；個人會員的法定姓名會作為 App Store 賣方名稱，組織會員則需合法實體與適用的 D-U-N-S 資料。官方說明：[Apple 入會](https://developer.apple.com/programs/enroll/)、[Android 簽署](https://developer.android.com/studio/publish/app-signing)。
 
 - **Android**：由著作權人建立／保管 upload keystore，放在專案之外並離線備份。透過本機密碼管理器或隱藏輸入設定環境變數 `ZHIMING_KEYSTORE_FILE`（絕對路徑）、`ZHIMING_KEYSTORE_PASSWORD`、`ZHIMING_KEY_ALIAS`、`ZHIMING_KEY_PASSWORD`，再執行 `npm run release:android`。請勿把密碼貼到對話、命令歷史或專案檔案；不要使用 Gradle `--debug`／`--scan` 公開建置環境。
-- **iOS**：先在 Xcode 設好 Apple Developer 帳號、有效簽署憑證與 App／Widget provisioning profiles；設定 `ZHIMING_APPLE_TEAM_ID`，再執行 `npm run release:ios`。App 與 Widget 必須屬於同一 Team。此流程不會執行 `-allowProvisioningUpdates` 或自動上傳；完成後仍需在 Organizer 驗證／匯出，再由使用者決定是否上傳 TestFlight。
+- **iOS**：先在 Xcode 設好 Apple Developer 帳號、有效簽署憑證與 App／Widget provisioning profiles；設定 `ZHIMING_APPLE_TEAM_ID`，再執行 `npm run release:ios`。App 與 Widget 必須屬於同一 Team。此流程會執行 `-allowProvisioningUpdates`（2026-11-28 經批准）但不自動上傳；完成後於 Organizer 驗證，再經 App Store Connect 上傳（首次上傳已完成 2026-11-28）。
 - 缺少 Android 簽署資料時，腳本與直接呼叫 Gradle 的 release 建置都會停止；未簽署模式必須明確指定。憑證、密碼檔、Archive、AAB 輸出均不得提交。
 - 原生版本為 `1.0.0 (2)`，Android versionCode 與 iOS App／Widget build 已同步；之後每次商店上傳都必須使用更高的 build 編號。此次未改網頁內容，網頁快取版號維持不變。
 
 已驗證：11 項發布防呆測試；Android 未簽署 AAB 與 debug 回歸建置；iOS arm64 裝置 Release Archive，含 Widget、農曆資料、隱私清單、網頁資產及 dSYM；App／Widget 版號一致且無 debug dylib。也確認既有未簽署快取及全域 Gradle unsigned 設定不能讓缺少憑證的正式建置通過。
 
-仍待：真實 upload key 的簽署驗證、Apple 簽署／匯出驗證（目前找不到有效 codesigning identity）、公開隱私政策 URL、商店主控台表單與上傳、實機 QA。未簽署建置成功不等於可送審；小工具桌面互動、通知與分享仍需實機驗證。
+仍待：真實 upload key 的簽署驗證、TestFlight 處理與出口合規問答、內部測試實機 QA（小工具、通知、分享）、公開隱私政策 URL、商店主控台表單與送審、Android 截圖重拍（iOS 已於 2026-11-28 重拍）。未簽署建置成功不等於可送審；小工具桌面互動、通知與分享仍需實機驗證。
 
 ### 搜尋引擎與預渲染（2026-11-26）
 
