@@ -11,7 +11,7 @@
 ### 名稱
 
 ```text
-知命：四柱八字排盤
+知命－八字排盤
 ```
 
 ### 副標題
@@ -90,7 +90,7 @@
 ### 應用程式名稱
 
 ```text
-知命：四柱八字排盤
+知命－八字排盤
 ```
 
 ### 簡短說明
@@ -208,10 +208,10 @@ node scripts/store-assets/validate.mjs
 
 | 待補項目 | 目前值／動作 |
 | --- | --- |
-| 支援信箱 `supportEmail` | `null`；由使用者提供可收信的地址 |
-| 支援網址 `supportUrl` | `null`；需可公開存取並含真實聯絡方式，不能用本機路徑代替 |
-| 隱私政策網址 `privacyPolicyUrl` | `null`；需部署正式公開頁面，App 內政策頁不等同公開網址 |
-| 著作權權利人 `copyrightHolder` | `null`；使用者確認法定顯示名稱及取得權利年份後填寫，Apple 會自動加上版權符號［官 2］ |
+| 支援信箱 `supportEmail` | `vapourware@hotmail.com`（2026-11-28 使用者提供） |
+| 支援網址 `supportUrl` | `https://www.myzhiming.com/about`（/about 已加聯絡區塊含該信箱） |
+| 隱私政策網址 `privacyPolicyUrl` | `https://www.myzhiming.com/privacy/`（已預渲染上線） |
+| 著作權權利人 `copyrightHolder` | `2026 Wang Jen Lim`（2026-11-28 使用者確認；Apple 會自動加上版權符號［官 2］） |
 | 審查聯絡人 | 姓名、電子郵件、電話待填；不是登入帳號，也不以示例聯絡方式代填 |
 | 隱私與資料安全申報 | 依最終二進位檔、權限與備份行為核對兩平台表單；本稿不是完成申報的證明 |
 | 截圖與裝置驗證 | 已製作瀏覽器排版草稿；送審前換成原生 App 截圖，提醒、小工具、分享仍須實機驗證［內 8］ |

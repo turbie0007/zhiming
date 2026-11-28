@@ -4,15 +4,15 @@
   "capturedWith": "scripts/native-qa/capture.mjs",
   "appVersion": "1.0.0",
   "nativeBuild": 2,
-  "webVersion": "20261155",
+  "webVersion": "20261156",
   "bundleId": "top.turbie.zhiming",
   "devices": {
     "ios-iphone": {
       "platform": "ios",
       "device": "Zhiming-QA-iPhone",
       "runtime": "iOS-27-2",
-      "state": "Shutdown",
-      "capturedAt": "2026-11-28T13:23:20.725Z",
+      "state": "Booted",
+      "capturedAt": "2026-11-28T14:00:21.276Z",
       "screenshots": [
         {
           "scene": "01-chart",
@@ -282,8 +282,8 @@
       "platform": "ios",
       "device": "iPad Pro 13-inch (M5)",
       "runtime": "iOS-27-2",
-      "state": "Shutdown",
-      "capturedAt": "2026-11-28T13:25:17.103Z",
+      "state": "Booted",
+      "capturedAt": "2026-11-28T14:00:56.035Z",
       "screenshots": [
         {
           "scene": "01-chart",
