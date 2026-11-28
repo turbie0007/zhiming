@@ -68,18 +68,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A13D00002F10000000000006 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		504EC3011FED79650016851F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A13D00002F10000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,17 +105,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A13D00002F10000000000009 /* Widget */ = {
-			isa = PBXGroup;
-			children = (
-				A13D00002F1000000000000A /* ZhimingWidget.swift */,
-				A13D00002F1000000000000B /* TodayModel.swift */,
-				A13D00002F1000000000000D /* TodayData.json */,
-				A13D00002F1000000000000C /* Info.plist */,
-			);
-			path = Widget;
-			sourceTree = "<group>";
-		};
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -131,6 +120,17 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		A13D00002F10000000000009 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				A13D00002F1000000000000A /* ZhimingWidget.swift */,
+				A13D00002F1000000000000B /* TodayModel.swift */,
+				A13D00002F1000000000000D /* TodayData.json */,
+				A13D00002F1000000000000C /* Info.plist */,
+			);
+			path = Widget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -218,14 +218,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A13D00002F10000000000007 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A13D00002F10000000000010 /* TodayData.json in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		504EC3021FED79650016851F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -240,18 +232,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		A13D00002F10000000000005 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
+		A13D00002F10000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A13D00002F1000000000000E /* TodayModel.swift in Sources */,
-				A13D00002F1000000000000F /* ZhimingWidget.swift in Sources */,
+				A13D00002F10000000000010 /* TodayData.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -261,7 +252,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A13D00002F10000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A13D00002F1000000000000E /* TodayModel.swift in Sources */,
+				A13D00002F1000000000000F /* ZhimingWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A13D00002F10000000000013 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A13D00002F10000000000001 /* ZhimingWidget */;
+			targetProxy = A13D00002F10000000000014 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -281,14 +289,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
-
-/* Begin PBXTargetDependency section */
-		A13D00002F10000000000013 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A13D00002F10000000000001 /* ZhimingWidget */;
-			targetProxy = A13D00002F10000000000014 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		504EC3141FED79650016851F /* Debug */ = {
@@ -407,6 +407,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = HJDU65G2Z9;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -429,6 +430,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = HJDU65G2Z9;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (

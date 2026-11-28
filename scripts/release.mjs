@@ -65,7 +65,7 @@ try {
       '-project', 'ios/App/App.xcodeproj', '-scheme', 'App', '-configuration', 'Release',
       '-destination', 'generic/platform=iOS', '-archivePath', artifact,
       '-derivedDataPath', join(root, 'ios/DerivedData'),
-      ...(unsigned ? ['CODE_SIGNING_ALLOWED=NO'] : [`DEVELOPMENT_TEAM=${process.env.ZHIMING_APPLE_TEAM_ID}`]),
+      ...(unsigned ? ['CODE_SIGNING_ALLOWED=NO'] : [`DEVELOPMENT_TEAM=${process.env.ZHIMING_APPLE_TEAM_ID}`, '-allowProvisioningUpdates']),
       'archive',
     ]);
     console.log(`Archive: ${artifact}`);
