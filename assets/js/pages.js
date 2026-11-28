@@ -1,5 +1,5 @@
-import { ARTICLES } from './learn.js?v=20261151';
-import { esc, icon } from './ui.js?v=20261151';
+import { ARTICLES } from './learn.js?v=20261152';
+import { esc, icon } from './ui.js?v=20261152';
 
 export const BRAND = '知命';
 export const SITE_NAME = '知命 · 四柱八字排盤';
@@ -289,6 +289,11 @@ ${pageHead({
       <section class="about-quote reveal">
         <span class="quote-mark">「</span>
         <p>善易者不卜。真正的傳統，不是把一切交給命盤，而是借它照見自己。</p>
+      </section>
+
+      <section class="about-disclaimer reveal">
+        <h3>著作權聲明</h3>
+        <p>本網站之介面設計、文字內容、圖表與程式碼，著作權均屬知命作者所有，受著作權法保護。未經事前書面同意，不得重製、公開傳輸、改作、散布或為任何商業利用；引用請註明來源，並僅限合理使用範圍。侵權必究。</p>
       </section>
 
       <section class="about-disclaimer reveal">

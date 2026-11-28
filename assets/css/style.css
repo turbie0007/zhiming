@@ -3038,6 +3038,14 @@ input, select, textarea {
   color: var(--cinnabar);
 }
 
+.footer-copy {
+  margin-top: 16px;
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  text-align: center;
+}
+
 /* ---------- Mobile nav / toast / noscript ---------- */
 
 .mobile-nav {

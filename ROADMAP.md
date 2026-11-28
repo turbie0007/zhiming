@@ -1,8 +1,8 @@
 # 知命 Roadmap
 
-更新日期：2026-11-27
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261151）
-目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；尚未送審。
+更新日期：2026-11-28
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261152）
+目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會進行中、新增全站版權聲明與 LICENSE（All Rights Reserved）；尚未送審。
 
 ## 產品原則
 
@@ -104,7 +104,7 @@ Android 需 JDK 21；`JAVA_HOME` 必須指向 JDK Home（本機安裝為 `$HOME/
 - **前端**：`assets/js/cloud.js` 以純 fetch 呼 GoTrue／PostgREST（不引 SDK、維持靜態 ES modules）；`cloud-config.js` 放 public-safe URL/anonKey（留空＝雲端整體停用）。命例頁新增「會員與同步」卡：登入、升級、opt-in 雲端備份開關、立即同步、管理訂閱、登出；同步為 per-record last-write-wins＋tombstone（`mergeRecords`）。
 - **隱私**：政策頁新增第三節（自選雲端會員）、生效日 2026-11-27；`PRIVACY-DECLARATIONS.md` 加註原生申報不變。
 
-已完成：schema/RLS、cloud.js、前端會員牆／opt-in／同步、三個 edge function、隱私更新、回歸測試 22 例全通過、版號 20261151、iOS／Android 資產同步。
+已完成：schema/RLS、cloud.js、前端會員牆／opt-in／同步、三個 edge function、隱私更新、回歸測試 22 例全通過、版號 20261152、iOS／Android 資產同步。
 
 **待使用者 provision（我不經手密碼/keys）**：
 1. 建 Supabase project；執行 `0001_init.sql`；Auth 設定 magic link 與 redirect URL（`https://www.myzhiming.com/`）。
