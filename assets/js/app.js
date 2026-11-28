@@ -1,27 +1,27 @@
 import {
   STEMS, BRANCHES, ELEMENT_LABEL, ANIMALS, CITIES, JIE_MAP,
   LUNAR_DAYS, GENDER_LABEL, CLIMATE,
-} from './data.js?v=20261155';
+} from './data.js?v=20261156';
 import {
   computeChart, todayOverview, beijingNowParts, elementOfStem, elementOfBranch,
   analyzeInteractions, interactionSummary, periodTable, hourPeriod,
-} from './bazi.js?v=20261155';
+} from './bazi.js?v=20261156';
 import {
   lunarMonthList, lunarToSolar, solarToLunar, formatLunar, lunarYearLabel, formatDate,
   getSolarTermTs, getSolarTermName,
-} from './astro.js?v=20261155';
+} from './astro.js?v=20261156';
 import {
   isNative, haptic, shareNative, notificationPermission,
   requestNotificationPermission, scheduleNotifications, cancelNotifications, syncStatusBar,
-} from './native.js?v=20261155';
-import { ARTICLES } from './learn.js?v=20261155';
-import { GLOSSARY } from './glossary.js?v=20261155';
-import { esc, icon } from './ui.js?v=20261155';
-import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261155';
+} from './native.js?v=20261156';
+import { ARTICLES } from './learn.js?v=20261156';
+import { GLOSSARY } from './glossary.js?v=20261156';
+import { esc, icon } from './ui.js?v=20261156';
+import { BRAND, PAGES, articlePath, notFoundMarkup } from './pages.js?v=20261156';
 import {
   cloudEnabled, membershipActive, captureRedirectSession, currentUser,
   signInWithEmail, signOut, fetchMembership, pullRecords, pushRecords, mergeRecords, invokeBilling,
-} from './cloud.js?v=20261155';
+} from './cloud.js?v=20261156';
 
 const STORAGE = {
   records: 'zhiming.records.v3',

@@ -1,7 +1,7 @@
 # 知命 Roadmap
 
 更新日期：2026-11-28
-目前版本：1.0.0（原生 build 2；網頁快取版號 20261155）
+目前版本：1.0.0（原生 build 2；網頁快取版號 20261156）
 目前狀態：20 項改善與命例管理完成；Capacitor iOS／Android 已可編譯並於模擬器啟動；2026-11-22 完成格局與用神分析、隱私政策頁、iOS 隱私清單與觸覺／原生分享／節氣提醒；2026-11-23 完成今日干支桌面小工具與商店隱私申報稿；2026-11-26 完成搜尋引擎結構與預渲染；2026-11-27 網頁版上線自訂網域 `https://www.myzhiming.com/`（GitHub Pages），並完成大運流年時間軸（Phase 1）；2026-11-28 會員變現 scaffold 已 commit／push（63cb70d，待 provision）、Apple Developer Program 入會已完成、新增全站版權聲明與 LICENSE（All Rights Reserved）、完成神煞完整化（17→38 顆，Phase 1）、iOS build 1.0.0 (2) 已上傳 App Store Connect（記錄名稱知命－八字排盤）；尚未送審。
 
 ## 產品原則
